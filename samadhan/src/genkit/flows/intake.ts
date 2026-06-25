@@ -165,7 +165,10 @@ export const intakeFlow = ai.defineFlow(
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         };
-        tx.set(issueRef, stripUndefined(issue));
+        // Write raw — NOT stripUndefined: a JSON round-trip would mangle the Firestore
+        // Timestamp (sla.deadline) + GeoPoint (location) into plain objects. No field is
+        // undefined here (all null-defaulted), so a direct set is safe.
+        tx.set(issueRef, issue);
         tx.set(issueRef.collection("activity").doc(), {
           type: "system",
           message: "Issue created",
