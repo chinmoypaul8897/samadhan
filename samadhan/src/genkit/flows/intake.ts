@@ -6,6 +6,7 @@ import { dedup, ACTIVE_ISSUE_STATUSES } from "@/genkit/steps/dedup";
 import { route } from "@/genkit/steps/route";
 import { act } from "@/genkit/steps/act";
 import { getDb } from "@/lib/firebase-admin";
+import { notifyReporter, issueLink } from "@/lib/notify";
 import { trackingId } from "@/lib/trackingId";
 import { geohashOf } from "@/lib/geo";
 import type { PerceiveOutput, Routing } from "@/genkit/schemas";
@@ -311,6 +312,13 @@ export const intakeFlow = ai.defineFlow(
               pipeline: fpl,
               updatedAt: FieldValue.serverTimestamp(),
             });
+          });
+          // Ping the seed reporter that support grew (best-effort, post-commit) — C7.
+          await notifyReporter(matchedId, {
+            title: `Samadhan · ${verdict.matchedTrackingId ?? "your report"}`,
+            body: "Another citizen reported this — your issue is gaining support.",
+            link: issueLink(matchedId),
+            data: { issueId: matchedId, kind: "new_supporter" },
           });
           return { status: "linked", serviceCode: a.serviceCode, issueId: matchedId };
         } catch (err) {
