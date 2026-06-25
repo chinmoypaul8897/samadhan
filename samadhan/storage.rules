@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Samadhan Storage perimeter — data-shapes.md §7 (uid-scoped) + backend-plan.md C1.4.
+// Citizen uploads live under reports/{uid}/... so ownership is enforced by the path.
+// Admin SDK writes (issue before/after copies) bypass these rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isStaff() {
+      return isSignedIn() && request.auth.token.role in ['officer', 'admin'];
+    }
+
+    // Citizen capture uploads: image photo (required) + optional voice note.
+    match /reports/{uid}/{allPaths=**} {
+      allow read: if request.auth.uid == uid || isStaff();
+      allow write: if request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType.matches('audio/.*'));
+    }
+
+    // Issue media (representative before / resolution after). Public read; the
+    // officer after-proof write rule lands in C8. Admin writes bypass rules.
+    match /issues/{issueId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

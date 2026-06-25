@@ -1,0 +1,82 @@
+rules_version = '2';
+
+// Samadhan security perimeter — data-shapes.md §12 + backend-plan.md C1.2.
+// Principle: clients read public data and create only their OWN user + report docs.
+// Everything derived (issues, pipeline writes, status) is written by the Admin SDK
+// on the server, which bypasses these rules. Officer/admin authority comes from a
+// custom claim (request.auth.token.role) set by the seed/claims script — never a
+// client-writable field — so a citizen can never escalate their own role.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function isStaff() {
+      return isSignedIn() && request.auth.token.role in ['officer', 'admin'];
+    }
+    function issueData(issueId) {
+      return get(/databases/$(database)/documents/issues/$(issueId)).data;
+    }
+
+    // users/{uid} — citizens self-manage; role is pinned to 'citizen' from the client.
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isStaff();
+      allow create: if isOwner(uid)
+        && request.resource.data.role == 'citizen';
+      allow update: if isOwner(uid)
+        && request.resource.data.role == 'citizen'
+        && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    // Reference data — public read, server-only write (Admin seed).
+    match /serviceCatalog/{serviceCode} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /authorities/{authorityId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // reports/{id} — citizen creates the intake doc; the pipeline (Admin) owns it after.
+    match /reports/{reportId} {
+      allow read: if isOwner(resource.data.reporterUid) || isStaff();
+      allow create: if isSignedIn()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.status == 'processing'
+        && !request.resource.data.keys().hasAny(['analysis', 'dedup', 'issueId']);
+      allow update, delete: if false;
+    }
+
+    // issues/{id} — created and mutated by the Admin pipeline only.
+    match /issues/{issueId} {
+      allow read: if resource.data.isPublic == true
+        || isOwner(resource.data.reporterUid)
+        || isStaff();
+      allow write: if false;
+
+      match /activity/{activityId} {
+        allow read: if issueData(issueId).isPublic == true
+          || isOwner(issueData(issueId).reporterUid)
+          || isStaff();
+        allow write: if false;
+      }
+
+      match /escalations/{escalationId} {
+        allow read: if isOwner(issueData(issueId).reporterUid) || isStaff();
+        allow write: if false; // reporter one-tap approve carve-out lands in C10
+      }
+
+      match /confirmations/{uid} {
+        allow read: if true;
+        allow create: if isOwner(uid); // full "me too" flow lands in C13
+        allow update, delete: if false;
+      }
+    }
+  }
+}

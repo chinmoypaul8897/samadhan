@@ -160,7 +160,7 @@ The unit the **intake pipeline** runs on (Capture→Perceive→Locate→Dedup→
 **Example (post-intake, linked as a supporter):**
 ```json
 { "id":"r_8fK2","reporterUid":"u_abc","channel":"app","status":"linked",
-  "media":{"path":"reports/r_8fK2/original.jpg","downloadUrl":"https://...","contentType":"image/jpeg","sizeBytes":184320,"exifGps":{"lat":12.9716,"lng":77.5946},"capturedAt":{"_ts":1}},
+  "media":{"path":"reports/u_abc/r_8fK2/original.jpg","downloadUrl":"https://...","contentType":"image/jpeg","sizeBytes":184320,"exifGps":{"lat":12.9716,"lng":77.5946},"capturedAt":{"_ts":1}},
   "location":{"lat":12.9716,"lng":77.5946},"geohash":"tdr1y8wxz0","accuracyM":8,
   "analysis":{"isCivicIssue":true,"confidence":0.94,"serviceCode":"pothole","serviceName":"Pothole","subCategory":"deep pothole","severity":"high","hazard":false,"caption":"Large water-filled pothole on a two-lane road","ocrText":null,"suggestedTitle":"Deep pothole near 80ft Road","tags":["road","monsoon"],"languageDetected":"en","reasoning":"Clear road-surface failure ~40cm wide."},
   "dedup":{"decision":"linked","candidateIssueIds":["i_77a"],"matchedIssueId":"i_77a","confidence":0.91,"reasoning":"Same location radius 18m, same category, matching visual."},
@@ -244,10 +244,10 @@ The de-duplicated physical issue. Surfaces: citizen tracking, officer portal, pu
 
 ## 7. Cloud Storage layout + media shapes
 
-Bucket paths:
+Bucket paths (citizen uploads are **uid-scoped** so the Storage rule can enforce `auth.uid == {uid}` — C1):
 ```
-reports/{reportId}/original.jpg          citizen photo (required)
-reports/{reportId}/voice.webm            optional voice note
+reports/{uid}/{reportId}/original.jpg    citizen photo (required); {uid} = reporterUid
+reports/{uid}/{reportId}/voice.webm      optional voice note
 issues/{issueId}/before.jpg              copy/ref of seed photo (representative)
 issues/{issueId}/after/{actorUid}.jpg    resolution proof (officer or citizen)
 ```
