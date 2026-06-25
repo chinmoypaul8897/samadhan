@@ -4,7 +4,16 @@ const nextConfig: NextConfig = {
   // Cloud Run: minimal self-contained server (Dockerfile copies .next/standalone).
   output: "standalone",
   // Native/server-only packages that must not be bundled for the client.
-  serverExternalPackages: ["firebase-admin"],
+  // Genkit + its OTel/handlebars deps must be externalised or Next 16/Turbopack
+  // throws require-of-ESM failures (verified binding).
+  serverExternalPackages: [
+    "firebase-admin",
+    "genkit",
+    "@genkit-ai/google-genai",
+    "@genkit-ai/next",
+    "@opentelemetry/sdk-node",
+    "handlebars",
+  ],
   async headers() {
     return [
       {

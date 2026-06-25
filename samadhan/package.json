@@ -11,8 +11,11 @@
     "verify:rules": "node scripts/verify-rules.mjs"
   },
   "dependencies": {
+    "@genkit-ai/google-genai": "^1.38.0",
+    "@genkit-ai/next": "^1.38.0",
     "firebase": "^12.15.0",
     "firebase-admin": "^14.1.0",
+    "genkit": "^1.38.0",
     "geofire-common": "^6.0.0",
     "lucide-react": "^1.21.0",
     "motion": "^12.41.0",
@@ -29,6 +32,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "genkit-cli": "^1.38.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
