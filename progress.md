@@ -3,19 +3,42 @@
 > Newest first. The **Current State** block is the 5-second catch-up for the next chunk. Plans live in the spec files; this is what *actually* happened (incl. every deviation).
 
 ## Current State
-- **Phase:** Foundation · **Chunk:** **C1 COMPLETE ✅** (gate green — auth + rules + indexes + seed all live & verified). **Next: C2 (capture → upload → create report).**
-- **Live cloud:** project `samadhan-civic-7k4m2` · region asia-south1 · Cloud Run https://samadhan-554128679437.asia-south1.run.app (still serving the C0/C1 landing — the client redeploy with web config is a C2 task, see Deferred).
-- **C1 live state:** Firebase Auth initialized + **Anonymous provider ON**; `firestore.rules` deployed; **7 composite indexes READY**; seed loaded — `serviceCatalog`(8) + `authorities`(3: BBMP/BWSSB/BESCOM) + 4 staff (3 officers + admin). Verified live: deny-test PASS (client `issues` write + role-escalation both denied), anonymous catalogue read returns all 8.
-- **Web config:** Firebase Web App created → `samadhan/.env.local` (`NEXT_PUBLIC_FIREBASE_*`, gitignored). Officer/admin demo creds → `samadhan/scripts/seed-output.local.json` (gitignored).
-- **Repo:** github.com/chinmoypaul8897/samadhan — git root = project folder; app in `/samadhan`. C1 = 5 code commits + 1 C1b tooling commit, pushed.
-- **Toolchain:** node v24, git, Docker ✓ · `gcloud` at `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin` (prepend PATH; run via PowerShell). **firebase CLI NOT installed** — C1b cloud bring-up was done entirely via **gcloud + ADC + Firebase REST APIs** (no `firebase login` needed). ADC configured → seed + Admin run locally. REST calls need an `x-goog-user-project` header (ADC quota project).
-- **Dev-server port:** **3000 busy → always use a non-3000 port (e.g. 3030).**
-- **Playwright MCP:** server **connects (√)** but its tools are **NOT loaded in this session** (they register at session start) → **restart the session** to get browser tools, then screenshot the signed-in shell + category grid. C1 was verified headlessly instead (deny-test + anonymous catalogue read).
-- **Deferred to C2** (neither blocks the C1 gate): (1) Storage default bucket + `storage.rules` deploy — first used by capture upload; (2) live Cloud Run redeploy with `NEXT_PUBLIC_*` inlined — Dockerfile build-args are staged, needs a Cloud Build build-arg pass.
+- **Phase:** Core · **Chunk:** **C2 COMPLETE ✅** (gate green — capture → upload → report doc, verified live). **Next: C3 (Genkit `intakeFlow` + Perceive + live trace).**
+- **Live cloud:** project `samadhan-civic-7k4m2` · asia-south1 · Cloud Run https://samadhan-554128679437.asia-south1.run.app — **now serving the C2 app** (capture flow + live category home), rev `samadhan-00002`. Web config baked in at build via Cloud Build `--build-arg`.
+- **C2 live state:** default Storage bucket **`samadhan-civic-7k4m2.firebasestorage.app`** provisioned (asia-south1); bucket **CORS** applied (localhost:3030 + Cloud Run origin; PUT/POST + `x-goog-resumable`); **`storage.rules` deployed** (release `firebase.storage/<bucket>`). Verified headless: anon client upload → uid-scoped path, report doc passes the gate (id===docId, 10-char geohash, 5 pending steps, GeoPoint), cross-uid write **denied**.
+- **Capture path:** `/report` CaptureFlow (photo + auto-GPS + note; GPS required, denial → retry, no fake coord) → `createReport` (`lib/reports.ts`) → `/report/[id]` processing (5-step seam for C3) → `/me` live list. Pipeline kicked via `POST /api/intake` **stub** — request contract **frozen** as `{data:{reportId}}` so C3's `appRoute(intakeFlow)` swap is drop-in.
+- **Build/deploy:** Artifact Registry repo `samadhan` (asia-south1); `cloudbuild.yaml` builds+pushes with NEXT_PUBLIC_* `--build-arg` (image tag `:c2`); **deploy run separately by owner** (`gcloud run deploy --image`) — the in-build deploy step was dropped because granting the Cloud Build SA `run.admin` is an IAM elevation that wasn't authorized (and isn't needed).
+- **C1 live state (unchanged):** Anonymous Auth ON; `firestore.rules` + 7 composite indexes; seed = `serviceCatalog`(8) + `authorities`(3) + 4 staff. Web config → `samadhan/.env.local`; officer/admin creds → `scripts/seed-output.local.json` (both gitignored).
+- **Repo:** github.com/chinmoypaul8897/samadhan — app in `/samadhan`. C2 = 3 code commits + 1 C2b tooling commit (+ this log), pushed.
+- **Toolchain:** node v24, git, Docker; `gcloud` at `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin` (prepend PATH; PowerShell). firebase CLI NOT installed — all cloud ops via gcloud + ADC + Firebase REST (`x-goog-user-project` header). Node REST helpers: `deploy-rules.mjs`, `firebase-webapp-config.mjs`, `provision-storage.mjs`.
+- **Dev-server port:** **3030** (pinned in `npm run dev`; matches the CORS origin). 3000 busy.
+- **Playwright MCP:** server connects (√) but its tools are still **NOT loaded this session** → C2 verified headless (data path + ownership). Restart to get browser tools → screenshot capture→processing + a real-browser CORS upload.
+- **Carried forward:** Gemini key → Secret Manager in C3; voice note → C13; interactive map-pin fallback → C4; EXIF extraction skipped.
 
 ---
 
 ## Log
+
+### C2 — Capture → upload → create report — COMPLETE ✅ (gate green)
+**Bindings verified first (background research workflow · 4 agents):** firebasestorage `projects.defaultBucket.create` (location asia-south1, one-step create+link, Blaze-gated — billing confirmed Blaze); Storage web `uploadBytesResumable` + **mandatory bucket CORS**; geofire `geohashForLocation` (10-char) / `distanceBetween` (km×1000); `gcloud run deploy --source` has **no** `--build-arg` → Cloud Build + substitutions. An adversarial review caught a bucket-name blocker (`.appspot` vs `.firebasestorage.app`) + 3 gaps, all fixed before building.
+
+**C2a (code · 3 commits):**
+- `geofire-common`; `lib/geo.ts`, `lib/storage.ts` (resumable upload + defensive ~1280px downscale → original on decode failure), `lib/reports.ts` (`createReport` self-enforces the gate the rules don't; `useMyReports`/`useReport`).
+- `/report` CaptureFlow (photo + auto-GPS + note, all states); `/report/[id]` ProcessingView (5-step `PipelineSteps` = the C3 seam); `/me` live list; `/api/intake` stub.
+- dev port pinned 3030.
+
+**C2b (cloud · gcloud + ADC + REST):**
+- Provisioned default bucket `samadhan-civic-7k4m2.firebasestorage.app` (`provision-storage.mjs`).
+- Applied bucket CORS (`cors.json`); deployed `storage.rules` (release `firebase.storage/<bucket>` via `deploy-rules.mjs`).
+- Built+pushed image with NEXT_PUBLIC_* `--build-arg` (Cloud Build · AR repo `samadhan` · tag `:c2`); deployed rev `samadhan-00002` → **live URL now serves C2** (resolves C1's deferred redeploy).
+- Verified headless: report-doc gate PASS + cross-uid storage write denied.
+
+**Deviations / decisions:**
+- **GPS-denied = block-until-GPS + retry** (no fake coordinate — would corrupt dedup/routing/map). Interactive map-pin fallback → C4.
+- **`/api/intake` request contract frozen** as Genkit `{data:{reportId}}`; C2 ships a stub, C3 swaps the handler internals only. Kick is fire-and-forget (onSnapshot drives the UI).
+- **Defensive downscale** (~1280px; C3 spec says ~1024 for Gemini — re-tune there) with original-file fallback for HEIC.
+- **`cloudbuild.yaml` = build+push only**, owner runs deploy — the in-build deploy step needs `run.admin` on the Cloud Build SA, an IAM grant that auto-mode **denied** (unauthorised) and isn't needed.
+- **CORS verified via config** (`buckets describe`); real-browser upload pending the Playwright session restart.
 
 ### C1 — Auth + rules + indexes + seed — COMPLETE ✅ (gate green)
 **C1a (code · 5 commits):**
