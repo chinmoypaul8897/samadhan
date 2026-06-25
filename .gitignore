@@ -1,0 +1,25 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# env / secrets (never commit)
+.env
+.env.local
+.env.*.local
+*.local
+service-account*.json
+*-key.json
+
+# logs
+*.log
+npm-debug.log*
+
+# app build artifacts (also covered by samadhan/.gitignore)
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
