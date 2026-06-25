@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  doc,
+  onSnapshot,
+  collection,
+  query,
+  orderBy,
+  type Timestamp,
+  type GeoPoint,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase-client";
+import type { Severity } from "@/lib/reports";
+
+// issues/{issueId} (data-shapes §6). Created by the intake pipeline (Admin); read here
+// (public when isPublic). routing/filing fill in at C6, verification at C9 — so they're
+// loose/partial until then.
+export type IssueStatus =
+  | "submitted"
+  | "acknowledged"
+  | "assigned"
+  | "in_progress"
+  | "resolved_pending_verification"
+  | "verified_resolved"
+  | "cannot_fix"
+  | "reopened";
+
+export type Sla = {
+  slaHours: number;
+  startedAt: Timestamp;
+  deadline: Timestamp;
+  state: string;
+};
+
+export type IssueDoc = {
+  id: string;
+  trackingId: string;
+  status: IssueStatus;
+  statusNotes: string;
+  serviceCode: string;
+  serviceName: string;
+  group: string;
+  subCategory?: string | null;
+  severity: Severity;
+  hazard: boolean;
+  title: string;
+  description: string;
+  location: GeoPoint;
+  geohash: string;
+  addressString: string;
+  ward?: string | null;
+  zone?: string | null;
+  city?: string | null;
+  zipcode?: string | null;
+  beforeMedia: { path: string; downloadUrl: string; contentType: string; sizeBytes: number };
+  mediaPaths: string[];
+  reportCount: number;
+  supporterCount: number;
+  routing: { authorityId?: string; department?: string } | null;
+  agencyResponsible: string;
+  sla: Sla;
+  escalationLevel: number;
+  reporterUid: string;
+  tags: string[];
+  isPublic: boolean;
+  resolvedAt?: Timestamp | null;
+  verifiedAt?: Timestamp | null;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
+
+export type ActivityItem = {
+  id: string;
+  type: string;
+  message: string;
+  actorUid?: string | null;
+  fromStatus?: string;
+  toStatus?: string;
+  createdAt?: Timestamp;
+};
+
+/** Live issue (data-shapes §6). undefined = loading, null = not found. */
+export function useIssue(issueId: string) {
+  const [issue, setIssue] = useState<IssueDoc | null | undefined>(undefined);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "issues", issueId),
+      (snap) => setIssue(snap.exists() ? (snap.data() as IssueDoc) : null),
+      (err) => {
+        console.error("[useIssue]", err);
+        setError(true);
+      },
+    );
+    return () => unsub();
+  }, [issueId]);
+  return { issue, error };
+}
+
+/** Live activity timeline (newest first). */
+export function useActivity(issueId: string) {
+  const [items, setItems] = useState<ActivityItem[]>([]);
+  useEffect(() => {
+    const q = query(
+      collection(db, "issues", issueId, "activity"),
+      orderBy("createdAt", "desc"),
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ActivityItem, "id">) }))),
+      (err) => console.error("[useActivity]", err),
+    );
+    return () => unsub();
+  }, [issueId]);
+  return items;
+}
