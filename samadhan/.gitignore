@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# seeded credentials + any local-only artifacts
+*.local.json
+scripts/seed-output.local.json
+
 # vercel
 .vercel
 
