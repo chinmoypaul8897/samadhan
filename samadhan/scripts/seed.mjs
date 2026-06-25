@@ -135,6 +135,19 @@ const SERVICE_CATALOG = [
     requiresMetadata: false,
     description: "Power supply failure or electrical fault.",
   },
+  {
+    serviceCode: "other",
+    serviceName: "Other civic issue",
+    group: "other",
+    keywords: ["other", "general", "civic", "complaint", "miscellaneous"],
+    defaultAuthorityType: "municipal_corporation",
+    defaultDepartment: "General / Grievances",
+    slaHours: 48,
+    slaSource: "General grievance norm (approx)",
+    hazardDefault: false,
+    requiresMetadata: false,
+    description: "A civic issue that doesn't fit the standard categories.",
+  },
 ];
 
 // ─── authorities (3, Bengaluru) ──────────────────────────────────────────────
