@@ -3,18 +3,29 @@
 > Newest first. The **Current State** block is the 5-second catch-up for the next chunk. Plans live in the spec files; this is what *actually* happened (incl. every deviation).
 
 ## Current State
-- **Phase:** Foundation · **Chunk:** C0 — **C0a complete (local, built + verified)**; **C0b pending** (cloud bring-up → `docs/runbook-c0b.md`).
+- **Phase:** Foundation · **Chunk:** **C0 COMPLETE ✅** (gate green — deployed + verified live). **Next: C1.**
+- **Live:** https://samadhan-554128679437.asia-south1.run.app · project `samadhan-civic-7k4m2` · region asia-south1.
 - **Planning foundation complete:** CLAUDE.md, what-to-build.md, data-shapes.md, DESIGN.md, backend-plan.md, frontend-plan.md.
 - **Repo:** github.com/chinmoypaul8897/samadhan — git root = project folder; the app lives in `/samadhan`.
 - **Toolchain here:** node v24.14, npm 10.8, git 2.43, Docker 29.4 ✓ · `gh`/`gcloud`/`firebase` NOT installed → **C0b cloud bring-up is a runbook for the user** (`docs/runbook-c0b.md`).
 - **MCP:** Playwright MCP added (chromium, local scope) for live browser verification — **activates only after a session restart** (MCP loads at session start). Firebase MCP deferred to C1 (needs `firebase login`).
 - **Dev-server port:** **3000 is busy on this machine — always use a non-3000 port (e.g. 3030).**
 - **C0b cannot be automated by me:** it's gated on the user's Google OAuth + billing + Gemini key (identity/payment boundary, not tooling). Path: Google Cloud Shell (preinstalled+authed) per runbook, or user runs `gcloud auth login` once and I run the rest.
-- **Next:** **user runs `docs/runbook-c0b.md`** (gcloud/firebase — not installed here) → live Cloud Run URL + `/api/health` `adminReady:true` + budget alert + confirm repo is Public. Then start **C1** (auth + rules + indexes + seed).
+- **Next:** **C1** (auth + Firestore rules + indexes + Bengaluru seed). Also: restart session so Playwright MCP tools load → screenshot the live app.
 
 ---
 
 ## Log
+
+### C0b — Cloud bring-up — COMPLETE ✅ (C0 gate green)
+- User authenticated gcloud as **hello.chinmoypaul@gmail.com**; I ran everything else via the PowerShell tool.
+- Project **`samadhan-civic-7k4m2`** created; billing **`01AE04-426C34-CF6314`** (INR) linked; ADC quota project set.
+- APIs enabled: run, cloudbuild, artifactregistry, firestore, storage, firebasestorage, firebase, secretmanager, identitytoolkit, generativelanguage, geocoding/maps, cloudscheduler, billingbudgets.
+- **Firestore** `(default)` native @ asia-south1 (free tier). **SA** `samadhan-run` + roles (datastore.user, storage.objectAdmin, firebasecloudmessaging.admin, secretmanager.secretAccessor).
+- **Deployed** to Cloud Run via Cloud Build (`./samadhan` Dockerfile): **https://samadhan-554128679437.asia-south1.run.app** (rev samadhan-00001, 512Mi, max-instances 3, `--allow-unauthenticated`, env `GOOGLE_CLOUD_PROJECT`).
+- **Verified live:** `/api/health` → `{ok:true, projectId:"samadhan-civic-7k4m2", adminReady:true}`; `/`, `/report`, `/manifest.webmanifest`, `/icon-192/512.png` all **200**. GitHub repo **public** ✓. Budget alert **₹400** (50/90/100%) ✓.
+- **Deferred to their chunks:** Storage bucket + Anonymous Auth → C1; Gemini key → Secret Manager in C3 (no AI in C0).
+- **Op note:** `gcloud` not on tool PATH → prepend `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin`; run via PowerShell tool. Bash git push uses cached GitHub creds.
 
 ### C0 — Foundation  *(started)*
 **Decisions / deviations:**

@@ -158,6 +158,7 @@ Settled — plan files inherit these. Override anytime.
 - **Demo realism:** an in-app **"Authority/Officer" portal** simulates the municipal side so the full loop (file → officer acts → status → escalation) is demonstrable without a real government API. Real integration is roadmap.
 - **Submission artifacts (graded — we produce all):** deployed Cloud Run link, **public** GitHub repo, Google Doc (PS / solution / key features / tech / Google tech), README, and a demo script built around the three standout moments.
 - **Win definition:** top-3 national; bias every trade-off toward differentiation + Agentic Depth + polish over feature count.
+- **Cloud environment (live, C0b):** GCP project **`samadhan-civic-7k4m2`** (account hello.chinmoypaul@gmail.com) · region **asia-south1** · Cloud Run SA **`samadhan-run@samadhan-civic-7k4m2.iam.gserviceaccount.com`** · billing **`01AE04-426C34-CF6314`** (INR; ₹400 budget alert) · Firestore `(default)` native, asia-south1 · **Service URL: https://samadhan-554128679437.asia-south1.run.app**. `gcloud` is **not** on the tool PATH — prepend `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin` and run gcloud via the **PowerShell** tool (user already authenticated; creds cached).
 
 **Open — defaulted, confirm when known:** exact build time (default: multi-day solo, phased so a demoable vertical slice always exists); whether a demo video is required (default: prepare one).
 
