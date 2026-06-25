@@ -70,6 +70,16 @@ export type ReportStatus =
   | "linked"
   | "rejected";
 
+// report.dedup (data-shapes §5) — set by the Dedup step (C5). 'linked' carries the
+// matched issue; 'new' means it seeded its own issue.
+export type DedupResult = {
+  decision: "new" | "linked";
+  candidateIssueIds: string[];
+  matchedIssueId?: string;
+  confidence: number;
+  reasoning: string;
+};
+
 export type ReportDoc = {
   id: string;
   reporterUid: string;
@@ -83,6 +93,7 @@ export type ReportDoc = {
   isSeed: boolean;
   pipeline: StepTrace[];
   analysis?: PerceiveAnalysis;
+  dedup?: DedupResult;
   issueId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;

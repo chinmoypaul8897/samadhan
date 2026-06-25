@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, TriangleAlert, Search, RotateCcw, ArrowRight } from "lucide-react";
 import { useReport, type PerceiveAnalysis } from "@/lib/reports";
 import { PipelineSteps } from "./PipelineSteps";
+import { MergeCelebration } from "./MergeCelebration";
 import { buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
@@ -70,6 +71,8 @@ export function ProcessingView({ reportId }: { reportId: string }) {
               body="The agent couldn’t classify this one confidently. We’ve flagged it for review — you can also try a clearer photo."
               cta={{ href: "/report", label: "Try another photo" }}
             />
+          ) : report.status === "linked" && report.issueId ? (
+            <MergeCelebration issueId={report.issueId} />
           ) : (
             <header className="mt-5">
               <p className="font-mono text-[12px] uppercase tracking-[0.28px] text-brand">
@@ -96,7 +99,7 @@ export function ProcessingView({ reportId }: { reportId: string }) {
             </div>
           ) : null}
 
-          {report.issueId ? (
+          {report.issueId && report.status !== "linked" ? (
             <Link
               href={`/issue/${report.issueId}`}
               className={buttonClasses("brand", "mt-4 w-full justify-center")}

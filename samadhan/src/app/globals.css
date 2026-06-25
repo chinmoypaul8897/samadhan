@@ -55,8 +55,27 @@ body {
   animation: fade-up 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
+/* Motion: dedup merge — pop-in + deep-green supporter ring pulse (frontend-plan §A.6 `mergeAmplify`). */
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.animate-pop-in {
+  animation: pop-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes ring-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 45%, transparent); }
+  70% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--color-brand) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 0%, transparent); }
+}
+.animate-ring-pulse {
+  animation: ring-pulse 2s ease-out 3;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up { animation: none; }
+  .animate-pop-in { animation: none; }
+  .animate-ring-pulse { animation: none; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
