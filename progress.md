@@ -3,10 +3,10 @@
 > Newest first. The **Current State** block is the 5-second catch-up for the next chunk. Plans live in the spec files; this is what *actually* happened (incl. every deviation).
 
 ## Current State
-- **Phase:** Core · **Chunk:** **C3 COMPLETE ✅** (local gate green — Perceive classifies a photo live via Gemini 2.5 Flash). **Next: C4 (Locate + create seed issue + start SLA).**
-- **Model path:** **Vertex AI (ADC) · asia-south1 · gemini-2.5-flash** — NOT the Gemini Developer-API key. The user's `AQ.…` key is valid but the Developer API is billing-gated on this project (`429 prepayment credits depleted`), so we use Vertex (verified 200 OK, no key, bills pay-as-you-go — pennies, under ₹400). `aiplatform.googleapis.com` enabled. Genkit: `vertexAI({location:'asia-south1'})`.
-- **C3 verified (local, headless, real Commons photos):** pothole → `isCivicIssue:true`, conf 0.95, `serviceCode:pothole`, severity high, hazard true, perceive **done 8.5s**, `report.analysis` written, status `processing`; cat → `rejected`. `/api/intake` = `appRoute(intakeFlow)`, frozen `{data:{reportId}}` body.
-- **⚠ C3b BLOCKED on ONE IAM grant (needs your OK):** the live flow needs `roles/aiplatform.user` on the `samadhan-run` SA (auto-mode blocked me granting it). Until then the **live URL still serves C2** (rev `samadhan-00002`); local is fully working. Grant → I rebuild+redeploy (`:c3`) and the live agent works. Command in the C3 log below.
+- **Phase:** Core · **Chunk:** **C3 COMPLETE ✅** (verified **local + LIVE** — Perceive classifies a photo via Gemini 2.5 Flash on Vertex). **Next: C4 (Locate + create seed issue + start SLA).**
+- **Model path:** **Vertex AI (ADC) · asia-south1 · gemini-2.5-flash** — NOT the Gemini Developer-API key. The user's `AQ.…` key is valid but the Developer API is billing-gated on this project (`429 prepayment credits depleted`), so we use Vertex (no key, bills pay-as-you-go — pennies, under ₹400). `aiplatform.googleapis.com` enabled; `samadhan-run` SA granted `roles/aiplatform.user`. Genkit: `vertexAI({location:'asia-south1'})`.
+- **Live cloud:** Cloud Run **rev `samadhan-00004`** serves **C3** (image `:c3`). Verified live: real pothole photo → `POST /api/intake` 200 → perceive done 7.8s, `analysis` written (pothole/high). `/api/intake` = `appRoute(intakeFlow)`, frozen `{data:{reportId}}` body.
+- **C3 verified (local headless too):** pothole → isCivicIssue true / 0.95 / pothole / high / hazard; cat → `rejected`.
 - **C2 live state:** Storage bucket `samadhan-civic-7k4m2.firebasestorage.app` (asia-south1) + CORS + `storage.rules` deployed. Capture: `/report` → `createReport` → `/report/[id]` live console → `/me`.
 - **C1 live state:** Anonymous Auth ON; `firestore.rules` + 7 composite indexes; seed now **`serviceCatalog`(9, incl. `other`)** + `authorities`(3) + 4 staff. Web config → `samadhan/.env.local` (+ `GOOGLE_CLOUD_PROJECT`); officer/admin creds → `scripts/seed-output.local.json` (gitignored).
 - **Build/deploy:** AR repo `samadhan`; `cloudbuild.yaml` builds+pushes with NEXT_PUBLIC_* `--build-arg`; **owner runs `gcloud run deploy --image`** separately (CB-SA lacks run.admin; not granted).
@@ -35,13 +35,7 @@
 - **Added `other` serviceCatalog doc** (the §8.1 "else other" needs a real catalogue entry for C4/C6 lookup).
 - **Conditional sharp downscale** (only if >2 MB / non-JPEG; the C2 client already ships ~1280 px). HEIC → falls back to original.
 
-**C3b — gated on ONE IAM grant (auto-mode blocked; needs the founder to authorise):**
-```
-gcloud projects add-iam-policy-binding samadhan-civic-7k4m2 \
-  --member="serviceAccount:samadhan-run@samadhan-civic-7k4m2.iam.gserviceaccount.com" \
-  --role="roles/aiplatform.user" --condition=None
-```
-Then I rebuild+redeploy (`cloudbuild.yaml` `_TAG=c3` → `gcloud run deploy --image …:c3`) so the LIVE flow calls Vertex. Local gate already green. **Pending session restart:** Playwright screenshot of the live console.
+**C3b — DONE (live):** founder authorised `roles/aiplatform.user` on `samadhan-run`; built+pushed image `:c3` (Cloud Build) → `gcloud run deploy` → rev **`samadhan-00004`**. First live hit **500'd on sharp** (`ERR_DLOPEN_FAILED: libvips-cpp.so` — native binary not traced into `.next/standalone`) → fixed by lazy-`import("sharp")` inside the >2MB branch with an original-bytes fallback (commit `fix(perceive)`), rebuilt+redeployed. Live verify: real pothole → `POST /api/intake` 200, perceive done 7.8s, analysis written. **Pending session restart:** Playwright screenshot of the live console.
 
 ### C2 — Capture → upload → create report — COMPLETE ✅ (gate green)
 **Bindings verified first (background research workflow · 4 agents):** firebasestorage `projects.defaultBucket.create` (location asia-south1, one-step create+link, Blaze-gated — billing confirmed Blaze); Storage web `uploadBytesResumable` + **mandatory bucket CORS**; geofire `geohashForLocation` (10-char) / `distanceBetween` (km×1000); `gcloud run deploy --source` has **no** `--build-arg` → Cloud Build + substitutions. An adversarial review caught a bucket-name blocker (`.appspot` vs `.firebasestorage.app`) + 3 gaps, all fixed before building.
