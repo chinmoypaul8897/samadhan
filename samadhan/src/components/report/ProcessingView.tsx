@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, TriangleAlert, Search, RotateCcw } from "lucide-react";
+import { ArrowLeft, TriangleAlert, Search, RotateCcw, ArrowRight } from "lucide-react";
 import { useReport, type PerceiveAnalysis } from "@/lib/reports";
 import { PipelineSteps } from "./PipelineSteps";
 import { buttonClasses } from "@/components/ui/Button";
@@ -73,13 +73,19 @@ export function ProcessingView({ reportId }: { reportId: string }) {
           ) : (
             <header className="mt-5">
               <p className="font-mono text-[12px] uppercase tracking-[0.28px] text-brand">
-                Agent {report.analysis ? "· classified" : "· analysing"}
+                Agent {report.issueId ? "· tracked" : report.analysis ? "· classified" : "· analysing"}
               </p>
               <h1 className="mt-1 font-display text-[22px] font-normal tracking-[-0.01em] text-ink">
-                {report.analysis ? "Here’s what the agent sees" : "Working on your report"}
+                {report.issueId
+                  ? "Your issue is now tracked"
+                  : report.analysis
+                    ? "Here’s what the agent sees"
+                    : "Working on your report"}
               </h1>
               <p className="mt-1 text-[14px] text-muted">
-                Classifying, locating and routing your issue — this updates live.
+                {report.issueId
+                  ? "Classified, located and given a tracking ID with a live SLA clock."
+                  : "Classifying, locating and routing your issue — this updates live."}
               </p>
             </header>
           )}
@@ -88,6 +94,16 @@ export function ProcessingView({ reportId }: { reportId: string }) {
             <div className="mt-4">
               <ResultCard analysis={report.analysis} />
             </div>
+          ) : null}
+
+          {report.issueId ? (
+            <Link
+              href={`/issue/${report.issueId}`}
+              className={buttonClasses("brand", "mt-4 w-full justify-center")}
+            >
+              View your tracked issue
+              <ArrowRight className="size-4" strokeWidth={1.5} />
+            </Link>
           ) : null}
 
           <div className="mt-4">
