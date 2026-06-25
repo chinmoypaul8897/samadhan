@@ -10,6 +10,8 @@ import { StaticMap } from "./StaticMap";
 import { Timeline } from "./Timeline";
 import { AuthorityCard } from "./AuthorityCard";
 import { FilingCard } from "./FilingCard";
+import { BreachBanner } from "./BreachBanner";
+import { NotificationOptIn } from "./NotificationOptIn";
 import { cn } from "@/lib/cn";
 
 // Issue Detail (frontend-plan §D C4) — the tracked, deadlined issue. Public read.
@@ -40,6 +42,8 @@ export function IssueDetail({ issueId }: { issueId: string }) {
         <Notice>Issue not found.</Notice>
       ) : (
         <div className="mt-4 animate-fade-up space-y-5">
+          <BreachBanner issue={issue} />
+
           <header>
             <p className="font-mono text-[12px] uppercase tracking-[0.28px] text-muted">
               {issue.trackingId}
@@ -80,6 +84,8 @@ export function IssueDetail({ issueId }: { issueId: string }) {
             slaHours={issue.sla.slaHours}
             resolvedAt={issue.resolvedAt ?? null}
           />
+
+          <NotificationOptIn reporterUid={issue.reporterUid} />
 
           <section>
             <div className="flex items-start gap-1.5 text-[14px] text-ink">

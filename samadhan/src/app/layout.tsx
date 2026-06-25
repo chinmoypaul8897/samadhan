@@ -3,6 +3,8 @@ import { display, sans, mono } from "@/lib/fonts";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { AuthProvider } from "@/lib/auth-context";
 import { AppShell } from "@/components/shell/AppShell";
+import { ToastProvider } from "@/components/ui/Toast";
+import { FcmForeground } from "@/components/FcmForeground";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,7 +33,10 @@ export default function RootLayout({
     >
       <body className="flex min-h-dvh flex-col bg-canvas font-sans text-ink">
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <ToastProvider>
+            <AppShell>{children}</AppShell>
+            <FcmForeground />
+          </ToastProvider>
         </AuthProvider>
         <ServiceWorkerRegistrar />
       </body>
