@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { display, sans, mono } from "@/lib/fonts";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { AuthProvider } from "@/lib/auth-context";
+import { AppShell } from "@/components/shell/AppShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -28,7 +30,9 @@ export default function RootLayout({
       className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="flex min-h-dvh flex-col bg-canvas font-sans text-ink">
-        {children}
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>
