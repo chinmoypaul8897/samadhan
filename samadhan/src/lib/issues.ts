@@ -33,6 +33,28 @@ export type Sla = {
   state: string;
 };
 
+// Routing → issue.routing (data-shapes §8.3). Filled by the Route step (C6).
+export type Routing = {
+  authorityType: "municipal_corporation" | "water_board" | "discom" | "other";
+  authorityId: string;
+  department: string;
+  channel: "app" | "email" | "portal" | "phone" | "whatsapp" | "social";
+  confidence: number;
+  reasoning: string;
+};
+
+// Filing → issue.filing (data-shapes §8.4). Drafted by Act → 'prepared'; the one-tap file
+// consent flips it to 'submitted' (+ submittedAt / consentByUid).
+export type Filing = {
+  status: "draft" | "prepared" | "submitted" | "failed";
+  complaintText?: string;
+  language?: string;
+  format?: string;
+  externalRef?: string | null;
+  submittedAt?: Timestamp | null;
+  consentByUid?: string | null;
+};
+
 export type IssueDoc = {
   id: string;
   trackingId: string;
@@ -57,8 +79,9 @@ export type IssueDoc = {
   mediaPaths: string[];
   reportCount: number;
   supporterCount: number;
-  routing: { authorityId?: string; department?: string } | null;
+  routing: Routing | null;
   agencyResponsible: string;
+  filing?: Filing;
   sla: Sla;
   escalationLevel: number;
   reporterUid: string;
