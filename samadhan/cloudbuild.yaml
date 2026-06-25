@@ -1,20 +1,22 @@
-# Build the Next.js image with NEXT_PUBLIC_* inlined as Docker --build-arg, push to
-# Artifact Registry, and deploy to Cloud Run — in one build. `gcloud run deploy
-# --source` has NO --build-arg, so an explicit Cloud Build is required (C2b).
-# NEXT_PUBLIC_* are public client config (shipped in the browser bundle by design),
-# so passing them as substitutions is fine — not a secret leak.
+# Build the Next.js image with NEXT_PUBLIC_* inlined as Docker --build-arg and push
+# to Artifact Registry. `gcloud run deploy --source` has NO --build-arg, so an
+# explicit Cloud Build is required to inline the web config (C2b). NEXT_PUBLIC_* are
+# public client config (shipped in the browser bundle by design) — not a secret leak.
 #
-# Run from samadhan/:
-#   gcloud builds submit --project=samadhan-civic-7k4m2 --region=asia-south1 \
-#     --config=cloudbuild.yaml \
-#     --substitutions=_NEXT_PUBLIC_FIREBASE_API_KEY="…",_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="…",… .
+# Deploy is a SEPARATE owner-run step, so no IAM grant to the Cloud Build SA is needed:
+#   gcloud builds submit samadhan --project=samadhan-civic-7k4m2 \
+#     --config=samadhan/cloudbuild.yaml \
+#     --substitutions=_TAG=c2,_NEXT_PUBLIC_FIREBASE_API_KEY="…",_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="…",…
+#   gcloud run deploy samadhan \
+#     --image=asia-south1-docker.pkg.dev/samadhan-civic-7k4m2/samadhan/samadhan-web:c2 \
+#     --region=asia-south1 --platform=managed --quiet
 
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - build
       - '-t'
-      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/samadhan/samadhan-web:$BUILD_ID'
+      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/samadhan/samadhan-web:${_TAG}'
       - '--build-arg'
       - 'NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}'
       - '--build-arg'
@@ -32,28 +34,12 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_VAPID_PUBLIC_KEY=${_NEXT_PUBLIC_VAPID_PUBLIC_KEY}'
       - '.'
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - push
-      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/samadhan/samadhan-web:$BUILD_ID'
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - run
-      - deploy
-      - samadhan
-      - '--image'
-      - 'asia-south1-docker.pkg.dev/$PROJECT_ID/samadhan/samadhan-web:$BUILD_ID'
-      - '--region'
-      - 'asia-south1'
-      - '--platform'
-      - 'managed'
-      - '--quiet'
 
 images:
-  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/samadhan/samadhan-web:$BUILD_ID'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/samadhan/samadhan-web:${_TAG}'
 
 substitutions:
+  _TAG: 'latest'
   _NEXT_PUBLIC_FIREBASE_API_KEY: ''
   _NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ''
   _NEXT_PUBLIC_FIREBASE_PROJECT_ID: ''
