@@ -39,6 +39,7 @@
 - **Defensive downscale** (~1280px; C3 spec says ~1024 for Gemini — re-tune there) with original-file fallback for HEIC.
 - **`cloudbuild.yaml` = build+push only**, owner runs deploy — the in-build deploy step needs `run.admin` on the Cloud Build SA, an IAM grant that auto-mode **denied** (unauthorised) and isn't needed.
 - **CORS verified via config** (`buckets describe`); real-browser upload pending the Playwright session restart.
+- **Cost note:** the default bucket is in **asia-south1**, which is **not** in GCS's Always-Free tier (only US-CENTRAL1/EAST1/WEST1 are) → Storage bills against the ₹400 budget. Trivial at demo volume, but not free.
 
 ### C1 — Auth + rules + indexes + seed — COMPLETE ✅ (gate green)
 **C1a (code · 5 commits):**
