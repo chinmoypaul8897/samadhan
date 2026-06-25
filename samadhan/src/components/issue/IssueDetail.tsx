@@ -8,6 +8,8 @@ import { SlaClock } from "./SlaClock";
 import { StatusChip } from "./StatusChip";
 import { StaticMap } from "./StaticMap";
 import { Timeline } from "./Timeline";
+import { AuthorityCard } from "./AuthorityCard";
+import { FilingCard } from "./FilingCard";
 import { cn } from "@/lib/cn";
 
 // Issue Detail (frontend-plan §D C4) — the tracked, deadlined issue. Public read.
@@ -96,12 +98,15 @@ export function IssueDetail({ issueId }: { issueId: string }) {
             </div>
           </section>
 
-          {!issue.routing ? (
-            <p className="rounded-md bg-wash-blue/50 px-3 py-2.5 text-[13px] text-ink/75">
-              Next, the agent routes this to the right authority and drafts the formal
-              complaint.
-            </p>
-          ) : null}
+          <AuthorityCard routing={issue.routing} agencyResponsible={issue.agencyResponsible} />
+
+          <FilingCard
+            issueId={issue.id}
+            filing={issue.filing}
+            routing={issue.routing}
+            agencyResponsible={issue.agencyResponsible}
+            reporterUid={issue.reporterUid}
+          />
 
           <section>
             <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.28px] text-muted">

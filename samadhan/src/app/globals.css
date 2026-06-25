@@ -72,10 +72,28 @@ body {
   animation: ring-pulse 2s ease-out 3;
 }
 
+/* Motion: consent bottom sheet — scrim fade + panel slide-up (frontend-plan §A.6 `fileConsent`). */
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-scrim-in {
+  animation: scrim-in 0.2s ease-out both;
+}
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-sheet-up {
+  animation: sheet-up 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up { animation: none; }
   .animate-pop-in { animation: none; }
   .animate-ring-pulse { animation: none; }
+  .animate-scrim-in { animation: none; }
+  .animate-sheet-up { animation: none; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
