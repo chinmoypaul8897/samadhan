@@ -7,6 +7,9 @@
 - **Planning foundation complete:** CLAUDE.md, what-to-build.md, data-shapes.md, DESIGN.md, backend-plan.md, frontend-plan.md.
 - **Repo:** github.com/chinmoypaul8897/samadhan — git root = project folder; the app lives in `/samadhan`.
 - **Toolchain here:** node v24.14, npm 10.8, git 2.43, Docker 29.4 ✓ · `gh`/`gcloud`/`firebase` NOT installed → **C0b cloud bring-up is a runbook for the user** (`docs/runbook-c0b.md`).
+- **MCP:** Playwright MCP added (chromium, local scope) for live browser verification — **activates only after a session restart** (MCP loads at session start). Firebase MCP deferred to C1 (needs `firebase login`).
+- **Dev-server port:** **3000 is busy on this machine — always use a non-3000 port (e.g. 3030).**
+- **C0b cannot be automated by me:** it's gated on the user's Google OAuth + billing + Gemini key (identity/payment boundary, not tooling). Path: Google Cloud Shell (preinstalled+authed) per runbook, or user runs `gcloud auth login` once and I run the rest.
 - **Next:** **user runs `docs/runbook-c0b.md`** (gcloud/firebase — not installed here) → live Cloud Run URL + `/api/health` `adminReady:true` + budget alert + confirm repo is Public. Then start **C1** (auth + rules + indexes + seed).
 
 ---
