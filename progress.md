@@ -3,21 +3,45 @@
 > Newest first. The **Current State** block is the 5-second catch-up for the next chunk. Plans live in the spec files; this is what *actually* happened (incl. every deviation).
 
 ## Current State
-- **Phase:** Core · **Chunk:** **C2 COMPLETE ✅** (gate green — capture → upload → report doc, verified live). **Next: C3 (Genkit `intakeFlow` + Perceive + live trace).**
-- **Live cloud:** project `samadhan-civic-7k4m2` · asia-south1 · Cloud Run https://samadhan-554128679437.asia-south1.run.app — **now serving the C2 app** (capture flow + live category home), rev `samadhan-00002`. Web config baked in at build via Cloud Build `--build-arg`.
-- **C2 live state:** default Storage bucket **`samadhan-civic-7k4m2.firebasestorage.app`** provisioned (asia-south1); bucket **CORS** applied (localhost:3030 + Cloud Run origin; PUT/POST + `x-goog-resumable`); **`storage.rules` deployed** (release `firebase.storage/<bucket>`). Verified headless: anon client upload → uid-scoped path, report doc passes the gate (id===docId, 10-char geohash, 5 pending steps, GeoPoint), cross-uid write **denied**.
-- **Capture path:** `/report` CaptureFlow (photo + auto-GPS + note; GPS required, denial → retry, no fake coord) → `createReport` (`lib/reports.ts`) → `/report/[id]` processing (5-step seam for C3) → `/me` live list. Pipeline kicked via `POST /api/intake` **stub** — request contract **frozen** as `{data:{reportId}}` so C3's `appRoute(intakeFlow)` swap is drop-in.
-- **Build/deploy:** Artifact Registry repo `samadhan` (asia-south1); `cloudbuild.yaml` builds+pushes with NEXT_PUBLIC_* `--build-arg` (image tag `:c2`); **deploy run separately by owner** (`gcloud run deploy --image`) — the in-build deploy step was dropped because granting the Cloud Build SA `run.admin` is an IAM elevation that wasn't authorized (and isn't needed).
-- **C1 live state (unchanged):** Anonymous Auth ON; `firestore.rules` + 7 composite indexes; seed = `serviceCatalog`(8) + `authorities`(3) + 4 staff. Web config → `samadhan/.env.local`; officer/admin creds → `scripts/seed-output.local.json` (both gitignored).
-- **Repo:** github.com/chinmoypaul8897/samadhan — app in `/samadhan`. C2 = 3 code commits + 1 C2b tooling commit (+ this log), pushed.
-- **Toolchain:** node v24, git, Docker; `gcloud` at `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin` (prepend PATH; PowerShell). firebase CLI NOT installed — all cloud ops via gcloud + ADC + Firebase REST (`x-goog-user-project` header). Node REST helpers: `deploy-rules.mjs`, `firebase-webapp-config.mjs`, `provision-storage.mjs`.
-- **Dev-server port:** **3030** (pinned in `npm run dev`; matches the CORS origin). 3000 busy.
-- **Playwright MCP:** server connects (√) but its tools are still **NOT loaded this session** → C2 verified headless (data path + ownership). Restart to get browser tools → screenshot capture→processing + a real-browser CORS upload.
-- **Carried forward:** Gemini key → Secret Manager in C3; voice note → C13; interactive map-pin fallback → C4; EXIF extraction skipped.
+- **Phase:** Core · **Chunk:** **C3 COMPLETE ✅** (local gate green — Perceive classifies a photo live via Gemini 2.5 Flash). **Next: C4 (Locate + create seed issue + start SLA).**
+- **Model path:** **Vertex AI (ADC) · asia-south1 · gemini-2.5-flash** — NOT the Gemini Developer-API key. The user's `AQ.…` key is valid but the Developer API is billing-gated on this project (`429 prepayment credits depleted`), so we use Vertex (verified 200 OK, no key, bills pay-as-you-go — pennies, under ₹400). `aiplatform.googleapis.com` enabled. Genkit: `vertexAI({location:'asia-south1'})`.
+- **C3 verified (local, headless, real Commons photos):** pothole → `isCivicIssue:true`, conf 0.95, `serviceCode:pothole`, severity high, hazard true, perceive **done 8.5s**, `report.analysis` written, status `processing`; cat → `rejected`. `/api/intake` = `appRoute(intakeFlow)`, frozen `{data:{reportId}}` body.
+- **⚠ C3b BLOCKED on ONE IAM grant (needs your OK):** the live flow needs `roles/aiplatform.user` on the `samadhan-run` SA (auto-mode blocked me granting it). Until then the **live URL still serves C2** (rev `samadhan-00002`); local is fully working. Grant → I rebuild+redeploy (`:c3`) and the live agent works. Command in the C3 log below.
+- **C2 live state:** Storage bucket `samadhan-civic-7k4m2.firebasestorage.app` (asia-south1) + CORS + `storage.rules` deployed. Capture: `/report` → `createReport` → `/report/[id]` live console → `/me`.
+- **C1 live state:** Anonymous Auth ON; `firestore.rules` + 7 composite indexes; seed now **`serviceCatalog`(9, incl. `other`)** + `authorities`(3) + 4 staff. Web config → `samadhan/.env.local` (+ `GOOGLE_CLOUD_PROJECT`); officer/admin creds → `scripts/seed-output.local.json` (gitignored).
+- **Build/deploy:** AR repo `samadhan`; `cloudbuild.yaml` builds+pushes with NEXT_PUBLIC_* `--build-arg`; **owner runs `gcloud run deploy --image`** separately (CB-SA lacks run.admin; not granted).
+- **Toolchain:** node v24, git, Docker; `gcloud` at `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin` (prepend PATH; PowerShell). firebase CLI NOT installed — cloud ops via gcloud + ADC + REST (`x-goog-user-project` header). Helpers: `deploy-rules.mjs`, `firebase-webapp-config.mjs`, `provision-storage.mjs`. Genkit Dev UI: `genkit start` (genkit-cli installed).
+- **Dev-server port:** **3030** (pinned in `npm run dev`).
+- **Playwright MCP:** connects (√) but tools still **NOT loaded this session** → C3 verified headless. Restart for browser tools → screenshot the live console.
+- **Carried forward:** owner-auth on the flow → C12; `enableFirebaseTelemetry` → later observability; voice → C13; interactive map-pin → C4.
 
 ---
 
 ## Log
+
+### C3 — Perceive (Genkit + Gemini vision) + live trace — COMPLETE ✅ (local gate green)
+**Bindings verified first (background workflow · 4 agents · high-confidence):** Genkit **1.38.0** (all `@genkit-ai/*` in lockstep; use `@genkit-ai/google-genai`, not the deprecated `googleai`); `ai.generate({output:{schema}})` → `.output` is parsed-or-**null** (no throw); vision + structured output work together on gemini-2.5-flash via `prompt:[{media:{url:dataURL}},{text}]`; `appRoute` reads `{data:input}` (our frozen body is correct); must externalise genkit + otel + handlebars or Turbopack breaks. Adversarial review caught + we fixed: serverExternalPackages, whole-array pipeline write, idempotency guard, serviceCode validation, the missing reject UI.
+
+**Model-path change (the big one):** the user minted a Gemini **Developer-API** key (`AQ.…`) — valid, but the project is billing-gated → `429 "prepayment credits depleted"` (free tier not applying). Verified **Vertex AI** (same gemini-2.5-flash, ADC, **no key**) returns 200 in asia-south1 → **switched C3 to `vertexAI({location:'asia-south1'})`**, enabled `aiplatform.googleapis.com`. Bills pay-as-you-go (pennies; under ₹400). Deviates from backend-plan A.2 (`googleAI()`+GEMINI_API_KEY) — logged.
+
+**Built (4 commits):** genkit 1.38 deps; `genkit/index.ts` (Vertex), `schemas.ts` (zod PerceiveOutput), `lib/retry.ts`; `steps/perceive.ts` (Admin image download → conditional sharp downscale → data URL → `ai.generate` → **catalogue-validate serviceCode**, coerce unlisted→`other`); `flows/intake.ts` (idempotency guard, `ai.run('perceive')` span, **whole-array pipeline write with `Timestamp.now()`** — serverTimestamp can't sit inside arrays — + reject / needs_review paths); `/api/intake` = `appRoute(intakeFlow)`; dark `PipelineSteps` console + `ProcessingView` result card + terminal states; `next.config` serverExternalPackages; `.env.local` `GOOGLE_CLOUD_PROJECT`.
+
+**Verified (local, headless, real Commons photos):** pothole → isCivicIssue true / 0.95 / pothole / high / hazard, perceive done 8.5s, `analysis` written; cat → `rejected`, isCivicIssue false. `npm run build` clean.
+
+**Deviations / decisions:**
+- **Vertex AI, not the Developer-API key** (billing-gated) — ADC, no Secret Manager. Cost: pay-as-you-go, pennies at demo volume, under ₹400 (not a literal "free tier").
+- **Owner-auth deferred to C12** — the kick stays header-less; the report doc is already read-owner-only + update-server-only, and only the creator holds the reportId.
+- **`enableFirebaseTelemetry` dropped** from C3 (Monitoring/Trace IAM + log-spam risk; the Dev UI span needs no telemetry plugin).
+- **Added `other` serviceCatalog doc** (the §8.1 "else other" needs a real catalogue entry for C4/C6 lookup).
+- **Conditional sharp downscale** (only if >2 MB / non-JPEG; the C2 client already ships ~1280 px). HEIC → falls back to original.
+
+**C3b — gated on ONE IAM grant (auto-mode blocked; needs the founder to authorise):**
+```
+gcloud projects add-iam-policy-binding samadhan-civic-7k4m2 \
+  --member="serviceAccount:samadhan-run@samadhan-civic-7k4m2.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user" --condition=None
+```
+Then I rebuild+redeploy (`cloudbuild.yaml` `_TAG=c3` → `gcloud run deploy --image …:c3`) so the LIVE flow calls Vertex. Local gate already green. **Pending session restart:** Playwright screenshot of the live console.
 
 ### C2 — Capture → upload → create report — COMPLETE ✅ (gate green)
 **Bindings verified first (background research workflow · 4 agents):** firebasestorage `projects.defaultBucket.create` (location asia-south1, one-step create+link, Blaze-gated — billing confirmed Blaze); Storage web `uploadBytesResumable` + **mandatory bucket CORS**; geofire `geohashForLocation` (10-char) / `distanceBetween` (km×1000); `gcloud run deploy --source` has **no** `--build-arg` → Cloud Build + substitutions. An adversarial review caught a bucket-name blocker (`.appspot` vs `.firebasestorage.app`) + 3 gaps, all fixed before building.
