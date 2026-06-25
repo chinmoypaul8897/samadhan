@@ -21,3 +21,14 @@ export const PerceiveOutput = z.object({
 });
 
 export type PerceiveOutput = z.infer<typeof PerceiveOutput>;
+
+// Dedup → report.dedup (data-shapes §8.2). Gemini compares the new report photo to a
+// nearby same-category issue's photo and decides if they're the SAME physical problem
+// (same pothole/pile/pole), not merely the same category. Flat object, no z.union.
+export const DedupVerdict = z.object({
+  sameIssue: z.boolean(),
+  confidence: z.number(),
+  reasoning: z.string(),
+});
+
+export type DedupVerdict = z.infer<typeof DedupVerdict>;
