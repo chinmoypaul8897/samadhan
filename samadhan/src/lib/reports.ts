@@ -32,7 +32,28 @@ export type StepTrace = {
   status: StepStatus;
   summary: string;
   latencyMs?: number;
+  startedAt?: Timestamp;
+  finishedAt?: Timestamp;
   error?: string;
+};
+
+export type Severity = "low" | "medium" | "high";
+
+// Client mirror of PerceiveOutput (data-shapes §8.1) — set on report.analysis by C3.
+export type PerceiveAnalysis = {
+  isCivicIssue: boolean;
+  confidence: number;
+  serviceCode: string;
+  serviceName: string;
+  subCategory?: string;
+  severity: Severity;
+  hazard: boolean;
+  caption: string;
+  ocrText: string | null;
+  suggestedTitle: string;
+  tags: string[];
+  languageDetected: string;
+  reasoning: string;
 };
 export const PIPELINE_STEPS: PipelineStep[] = [
   "perceive",
@@ -61,6 +82,7 @@ export type ReportDoc = {
   accuracyM?: number;
   isSeed: boolean;
   pipeline: StepTrace[];
+  analysis?: PerceiveAnalysis;
   issueId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
