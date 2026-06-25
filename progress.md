@@ -3,21 +3,38 @@
 > Newest first. The **Current State** block is the 5-second catch-up for the next chunk. Plans live in the spec files; this is what *actually* happened (incl. every deviation).
 
 ## Current State
-- **Phase:** Core · **Chunk:** **C3 COMPLETE ✅** (verified **local + LIVE** — Perceive classifies a photo via Gemini 2.5 Flash on Vertex). **Next: C4 (Locate + create seed issue + start SLA).**
-- **Model path:** **Vertex AI (ADC) · asia-south1 · gemini-2.5-flash** — NOT the Gemini Developer-API key. The user's `AQ.…` key is valid but the Developer API is billing-gated on this project (`429 prepayment credits depleted`), so we use Vertex (no key, bills pay-as-you-go — pennies, under ₹400). `aiplatform.googleapis.com` enabled; `samadhan-run` SA granted `roles/aiplatform.user`. Genkit: `vertexAI({location:'asia-south1'})`.
-- **Live cloud:** Cloud Run **rev `samadhan-00004`** serves **C3** (image `:c3`). Verified live: real pothole photo → `POST /api/intake` 200 → perceive done 7.8s, `analysis` written (pothole/high). `/api/intake` = `appRoute(intakeFlow)`, frozen `{data:{reportId}}` body.
-- **C3 verified (local headless too):** pothole → isCivicIssue true / 0.95 / pothole / high / hazard; cat → `rejected`.
-- **C2 live state:** Storage bucket `samadhan-civic-7k4m2.firebasestorage.app` (asia-south1) + CORS + `storage.rules` deployed. Capture: `/report` → `createReport` → `/report/[id]` live console → `/me`.
-- **C1 live state:** Anonymous Auth ON; `firestore.rules` + 7 composite indexes; seed now **`serviceCatalog`(9, incl. `other`)** + `authorities`(3) + 4 staff. Web config → `samadhan/.env.local` (+ `GOOGLE_CLOUD_PROJECT`); officer/admin creds → `scripts/seed-output.local.json` (gitignored).
-- **Build/deploy:** AR repo `samadhan`; `cloudbuild.yaml` builds+pushes with NEXT_PUBLIC_* `--build-arg`; **owner runs `gcloud run deploy --image`** separately (CB-SA lacks run.admin; not granted).
-- **Toolchain:** node v24, git, Docker; `gcloud` at `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin` (prepend PATH; PowerShell). firebase CLI NOT installed — cloud ops via gcloud + ADC + REST (`x-goog-user-project` header). Helpers: `deploy-rules.mjs`, `firebase-webapp-config.mjs`, `provision-storage.mjs`. Genkit Dev UI: `genkit start` (genkit-cli installed).
+- **Phase:** Core · **Chunk:** **C4 COMPLETE ✅** (verified **local + LIVE** — first full slice: snap → classify → **tracked issue with a live SLA countdown**). **Next: C5 (Dedup → merge & amplify).**
+- **Live cloud:** Cloud Run **rev `samadhan-00005`** serves **C4** (image `:c4`). Live slice verified: garbage photo @ Koramangala → issue `SMD-9BQ5D8BB`, geocoded address+ward, SLA 12h, GeoPoint pin; `/issue/[id]` renders.
+- **Model + Maps:** Gemini via **Vertex AI** (ADC, asia-south1, no key). Maps keys (both created C4b): **`MAPS_SERVER_KEY`** (Geocoding, API-restricted) in Secret Manager `maps-server-key` + Cloud Run `--update-secrets` + `.env.local`; **`NEXT_PUBLIC_MAPS_BROWSER_KEY`** (Static Maps, referrer-restricted) baked at build + `.env.local`. `apikeys`+`aiplatform` APIs enabled; `samadhan-run` SA has `aiplatform.user` + `secretAccessor`.
+- **C4 flow:** `intakeFlow` = Perceive → Locate (reverse geocode) → create seed `issue` (§6: trackingId, **concrete-Timestamp** SLA, `group`+`slaHours` from `serviceCatalog`, `beforeMedia`=report photo, `routing:null`/`filing:{draft}` placeholders) → link report (`issueId`/`isSeed`/`seeded`) + "Issue created" activity, all in **one transaction** (idempotent; aborts on concurrent link). `/issue/[id]` = trackingId · StatusChip · before photo · **live SlaClock** · address/ward · Static map · Timeline. ProcessingView → "View tracked issue" CTA.
+- **C2/C1 state:** capture (`/report`→`createReport`→`/report/[id]` console→`/me`); Storage bucket+CORS+`storage.rules`; Anonymous Auth; `firestore.rules` + 7 indexes; seed `serviceCatalog`(9, incl `other`) + `authorities`(3) + 4 staff. `.env.local` (gitignored) holds all keys; officer creds → `scripts/seed-output.local.json`.
+- **Build/deploy:** AR repo `samadhan`; `cloudbuild.yaml` builds+pushes with NEXT_PUBLIC_* `--build-arg`; **owner runs `gcloud run deploy --image … --update-secrets`** separately.
+- **Toolchain:** node v24, git, Docker; `gcloud` at `C:\Users\chinm\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin` (prepend PATH; PowerShell). firebase CLI NOT installed — cloud ops via gcloud + ADC + REST (`x-goog-user-project` header). Helpers: `deploy-rules.mjs`, `firebase-webapp-config.mjs`, `provision-storage.mjs`.
 - **Dev-server port:** **3030** (pinned in `npm run dev`).
-- **Playwright MCP:** connects (√) but tools still **NOT loaded this session** → C3 verified headless. Restart for browser tools → screenshot the live console.
-- **Carried forward:** owner-auth on the flow → C12; `enableFirebaseTelemetry` → later observability; voice → C13; interactive map-pin → C4.
+- **Playwright MCP:** connects (√) but tools still **NOT loaded this session** → C4 verified headless. Restart for browser tools → screenshot `/issue/[id]`.
+- **Carried forward:** `authority.charterSlas` SLA override → C6; interactive `MapView` + C2 GPS-denied map-pin fallback → C11; owner-auth → C12; `enableFirebaseTelemetry` → later; voice → C13.
 
 ---
 
 ## Log
+
+### C4 — Locate + create seed issue + start SLA — COMPLETE ✅ (local + LIVE; first full slice)
+**Bindings verified first (workflow · 3 agents · high-confidence):** Geocoding reverse — match `address_components` by `types[]` (ward = `sublocality_level_1`→`_2`→`neighborhood`; BBMP civic ward is NOT a Geocoding field); soft-fallback to `(approx) lat,lng` on any non-OK status (never block creation). `gcloud services api-keys create --api-target=service=geocoding-backend.googleapis.com / static-maps-backend.googleapis.com`; server key API-restricted (IP infeasible on Cloud Run dynamic egress), browser key `--allowed-referrers`. Static Maps `staticmap?center&zoom&size&scale&markers&key` (pipe→`%7C`). Review caught + fixed: group/slaHours source, idempotency+create race, concrete Timestamps, static-map key-tolerance.
+
+**Built (C4a · 5 commits incl. fix):** `lib/trackingId.ts` (Crockford base32, no BigInt — TS target <ES2020), `lib/sla.ts` (`computeSlaState`+`formatRemaining`), `genkit/steps/locate.ts`; restructured `intakeFlow` into 2 independent idempotent phases (perceive | locate+create); issue-create + report-link + "Issue created" activity in ONE transaction (re-reads `issueId`, aborts on concurrent link → no duplicate issues); `/issue/[id]` detail (client-ticked `SlaClock`, `StatusChip`, `StaticMap`, `Timeline`, `useIssue`/`useActivity`); `ProcessingView` → "View tracked issue" CTA.
+
+**C4b (cloud · self-served, NO user gate):** enabled `apikeys.googleapis.com`; created 2 Maps keys (server geocoding → Secret Manager `maps-server-key` + `.env.local` + `--update-secrets`; browser static → `.env.local` + baked); rebuilt `:c4` + deployed rev `samadhan-00005`.
+
+**Verified:** local — MG Road pothole → issue, "Ashok Nagar, Bengaluru 560001", SLA 24h, GeoPoint, "Issue created" activity. LIVE — Koramangala garbage → issue `SMD-9BQ5D8BB`, SLA 12h (serviceCatalog-sourced), geocoded address+ward, GeoPoint. `npm run build` clean.
+
+**Deviations / decisions:**
+- **`group` + `slaHours` from `serviceCatalog/{serviceCode}`, NOT `analysis`** — `PerceiveOutput` has no `group`. Corrects a backend-plan C4 wording slip.
+- **`stripUndefined` (JSON round-trip) bug** — it mangled the Firestore `Timestamp` (`sla.deadline`) + `GeoPoint` (`location`) into plain objects, killing the SLA clock. Fixed: write the issue **raw** (no undefined fields, all null-defaulted). Kept `stripUndefined` only on `analysis` (plain data). Caught by the local slice verify.
+- **Concrete `Timestamp.fromMillis(...)` for `sla.startedAt/deadline`** (serverTimestamp reads back null on first snapshot → frozen clock).
+- **Static Maps `<img>` thumbnail; interactive `MapView` + C2 GPS-pin fallback → C11.** The `<img>` tolerates a missing browser key (renders address block only) so key-creation can't block the gate.
+- **`beforeMedia` reuses the report photo** (its client-minted tokened `downloadUrl` is publicly readable; a durable `issues/{id}/before.jpg` copy is deferred — UBLA blocks per-object public ACLs).
+- **`routing:null` / `agencyResponsible:''` / `filing:{status:'draft'}`** placeholders (Route/Act = C6); `/issue/[id]` shows "routing next". `authority.charterSlas` SLA override deferred to C6.
+- **Pending session restart:** Playwright screenshot of the live `/issue/[id]`.
 
 ### C3 — Perceive (Genkit + Gemini vision) + live trace — COMPLETE ✅ (local gate green)
 **Bindings verified first (background workflow · 4 agents · high-confidence):** Genkit **1.38.0** (all `@genkit-ai/*` in lockstep; use `@genkit-ai/google-genai`, not the deprecated `googleai`); `ai.generate({output:{schema}})` → `.output` is parsed-or-**null** (no throw); vision + structured output work together on gemini-2.5-flash via `prompt:[{media:{url:dataURL}},{text}]`; `appRoute` reads `{data:input}` (our frozen body is correct); must externalise genkit + otel + handlebars or Turbopack breaks. Adversarial review caught + we fixed: serverExternalPackages, whole-array pipeline write, idempotency guard, serviceCode validation, the missing reject UI.
