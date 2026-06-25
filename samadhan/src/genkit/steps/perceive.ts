@@ -1,5 +1,4 @@
 import "server-only";
-import sharp from "sharp";
 import { ai, MODEL } from "@/genkit/index";
 import { PerceiveOutput } from "@/genkit/schemas";
 import { withRetry } from "@/lib/retry";
@@ -26,14 +25,19 @@ async function imageDataUrl(path: string): Promise<string> {
   const [buf] = await getBucket().file(path).download();
   let bytes = buf;
   if (buf.length > REENCODE_OVER_BYTES) {
+    // Lazy-load sharp only for the rare large/HEIC case. Its native libvips binary
+    // doesn't load in the Cloud Run standalone image, so on failure (or anywhere it
+    // can't load) we fall back to the original bytes — Gemini accepts up to 20MB
+    // inline and the C2 client already downscales the common path to ~1280px.
     try {
+      const sharp = (await import("sharp")).default;
       bytes = await sharp(buf)
         .rotate()
         .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
         .jpeg({ quality: 82 })
         .toBuffer();
     } catch {
-      bytes = buf; // never lose the image — fall back to the original
+      bytes = buf;
     }
   }
   return `data:image/jpeg;base64,${bytes.toString("base64")}`;
