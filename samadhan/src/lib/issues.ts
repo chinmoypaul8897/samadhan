@@ -55,6 +55,15 @@ export type Filing = {
   consentByUid?: string | null;
 };
 
+// Verification → issue.verification (data-shapes §8.6). Seeded at issue-create
+// ({required, beforeMediaPath}); the officer resolve (C8) adds afterMediaPath; the AI
+// verdict + citizen confirm land in C9.
+export type Verification = {
+  required: boolean;
+  beforeMediaPath: string;
+  afterMediaPath?: string | null;
+};
+
 export type IssueDoc = {
   id: string;
   trackingId: string;
@@ -82,8 +91,10 @@ export type IssueDoc = {
   routing: Routing | null;
   agencyResponsible: string;
   filing?: Filing;
+  verification?: Verification;
   sla: Sla;
   escalationLevel: number;
+  assignedOfficerUid?: string | null;
   reporterUid: string;
   tags: string[];
   isPublic: boolean;

@@ -92,3 +92,9 @@ export function uploadAfterPhoto(
 ): Promise<MediaResult> {
   return uploadImage(`issues/${issueId}/after/${uid}.jpg`, blob, onProgress);
 }
+
+/** Token-free download URL for a publicly-readable Storage path (issues/** read is public). */
+export function publicStorageUrl(path: string): string {
+  const bucket = storage.app.options.storageBucket;
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(path)}?alt=media`;
+}
