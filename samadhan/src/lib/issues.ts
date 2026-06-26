@@ -185,6 +185,27 @@ export function useActivity(issueId: string) {
   return items;
 }
 
+/**
+ * Whether the current user has already "me too"-ed this issue (C13). Live-reads
+ * confirmations/{uid} (public-read per rules). undefined = unknown/loading; guards a falsy uid.
+ */
+export function useHasSupported(issueId: string, uid?: string | null) {
+  const [supported, setSupported] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (!issueId || !uid) {
+      setSupported(undefined);
+      return;
+    }
+    const unsub = onSnapshot(
+      doc(db, "issues", issueId, "confirmations", uid),
+      (snap) => setSupported(snap.exists()),
+      (err) => console.error("[useHasSupported]", err),
+    );
+    return () => unsub();
+  }, [issueId, uid]);
+  return supported;
+}
+
 /** Live escalations (newest first) — the agent's drafted reminders/appeals/RTI (C10). */
 export function useEscalations(issueId: string) {
   const [items, setItems] = useState<Escalation[]>([]);

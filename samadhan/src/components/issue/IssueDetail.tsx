@@ -14,6 +14,7 @@ import { BreachBanner } from "./BreachBanner";
 import { NotificationOptIn } from "./NotificationOptIn";
 import { VerifyCard } from "./VerifyCard";
 import { EscalationCard } from "./EscalationCard";
+import { SupporterAction } from "./SupporterAction";
 import { cn } from "@/lib/cn";
 
 // Issue Detail (frontend-plan §D C4) — the tracked, deadlined issue. Public read.
@@ -80,6 +81,13 @@ export function IssueDetail({ issueId }: { issueId: string }) {
           {issue.description ? (
             <p className="text-[15px] leading-relaxed text-ink/85">{issue.description}</p>
           ) : null}
+
+          {/* Me-too (C13) — amplify standout #1; hidden for the reporter / private / signed-out. */}
+          <SupporterAction
+            issueId={issue.id}
+            reporterUid={issue.reporterUid}
+            isPublic={issue.isPublic}
+          />
 
           {/* Verify (C9) — renders only on resolved_pending_verification / verified_resolved. */}
           <VerifyCard issue={issue} />

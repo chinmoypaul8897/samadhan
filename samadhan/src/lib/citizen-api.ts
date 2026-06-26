@@ -44,3 +44,10 @@ export async function confirmVerification(issueId: string, confirmed: boolean): 
 export async function sendEscalation(issueId: string, escalationId: string): Promise<void> {
   await authedFetch(`/api/issues/${issueId}/escalations/${escalationId}/send`, { method: "POST" });
 }
+
+/** "This affects me too" — amplify an issue (C13). Returns whether it counted (false = already). */
+export async function supportIssue(issueId: string): Promise<{ already: boolean }> {
+  const res = await authedFetch(`/api/issues/${issueId}/confirm`, { method: "POST" });
+  const json = (await res.json().catch(() => ({}))) as { already?: boolean };
+  return { already: Boolean(json.already) };
+}
