@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/firebase-admin";
 import { requireOfficer } from "@/lib/claims";
 import type { IssueStatus } from "@/lib/status";
+import { errorResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -109,9 +110,6 @@ export async function GET(req: Request) {
       issues,
     });
   } catch (err) {
-    const msg = (err as Error).message;
-    const status = msg === "UNAUTHENTICATED" ? 401 : msg === "FORBIDDEN" ? 403 : 500;
-    if (status === 500) console.error("[officer/queue] failed", err);
-    return Response.json({ ok: false, error: msg }, { status });
+    return errorResponse(err, "officer/queue");
   }
 }

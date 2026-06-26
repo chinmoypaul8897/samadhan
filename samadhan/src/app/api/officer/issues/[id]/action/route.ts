@@ -2,6 +2,7 @@ import { getDb } from "@/lib/firebase-admin";
 import { requireOfficer, assertJurisdiction } from "@/lib/claims";
 import { transition, type IssueStatus } from "@/lib/status";
 import { runVerify } from "@/genkit/steps/verify";
+import { errorResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,20 +80,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return Response.json({ ok: true, action: act, ...result });
   } catch (err) {
-    const msg = (err as Error).message;
-    const status =
-      msg === "BAD_REQUEST" || msg === "MISSING_PHOTO" || msg === "MISSING_NOTE"
-        ? 400
-        : msg === "UNAUTHENTICATED"
-          ? 401
-          : msg === "FORBIDDEN"
-            ? 403
-            : msg === "NOT_FOUND"
-              ? 404
-              : msg === "ILLEGAL_TRANSITION" || msg === "STALE_STATUS"
-                ? 409
-                : 500;
-    if (status === 500) console.error("[officer/action] failed", err);
-    return Response.json({ ok: false, error: msg }, { status });
+    return errorResponse(err, "officer/action");
   }
 }

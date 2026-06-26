@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { requireCitizen } from "@/lib/claims";
+import { errorResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,10 +59,6 @@ export async function POST(
 
     return Response.json({ ok: true, already: false });
   } catch (err) {
-    const msg = (err as Error).message;
-    const status =
-      msg === "UNAUTHENTICATED" ? 401 : msg === "NOT_FOUND" ? 404 : msg === "FORBIDDEN" ? 403 : 500;
-    if (status === 500) console.error("[escalation/send] failed", err);
-    return Response.json({ ok: false, error: msg }, { status });
+    return errorResponse(err, "escalation/send");
   }
 }

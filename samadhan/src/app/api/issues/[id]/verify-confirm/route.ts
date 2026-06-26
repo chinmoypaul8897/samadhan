@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { transition, type IssueStatus } from "@/lib/status";
 import { notifyUser, issueLink } from "@/lib/notify";
 import { requireCitizen } from "@/lib/claims";
+import { errorResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,20 +80,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return Response.json({ ok: true, ...result });
   } catch (err) {
-    const msg = (err as Error).message;
-    const status =
-      msg === "BAD_REQUEST"
-        ? 400
-        : msg === "UNAUTHENTICATED"
-          ? 401
-          : msg === "FORBIDDEN"
-            ? 403
-            : msg === "NOT_FOUND"
-              ? 404
-              : msg === "ILLEGAL_TRANSITION" || msg === "STALE_STATUS"
-                ? 409
-                : 500;
-    if (status === 500) console.error("[verify-confirm] failed", err);
-    return Response.json({ ok: false, error: msg }, { status });
+    return errorResponse(err, "verify-confirm");
   }
 }
