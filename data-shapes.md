@@ -207,6 +207,7 @@ The de-duplicated physical issue. Surfaces: citizen tracking, officer portal, pu
 | `tags` | string[] | ✓ | |
 | `isPublic` | boolean | ✓ | default true |
 | `resolvedAt`/`verifiedAt` | Timestamp? |  | |
+| `demoSeed` | boolean? |  | seed-only — `true` on the C14 canonical demo dataset; absent on real issues. Used solely by `scripts/seed-demo.mjs --cleanup` (surgical wipe). Never read by the app. |
 | `createdAt`/`updatedAt` | Timestamp | ✓ | = Open311 requested_/updated_datetime |
 
 `Sla: { slaHours: number; startedAt: Timestamp; deadline: Timestamp; state: enum→§9 (slaState) }`
@@ -410,7 +411,7 @@ reopened         → in_progress
 | `status` (state machine) | `status` (`open`\|`closed`) | `verified_resolved`/`cannot_fix` → `closed`; else `open` |
 | `statusNotes` | `status_notes` | |
 | `location.lat/lng` | `lat` / `long` | |
-| `addressString` | `address_string` | |
+| `addressString` | `address` | the GET service_requests **response** element is `address`; `address_string` is the POST-create *input* name (C14 export emits `address`) |
 | `zipcode` | `zipcode` | |
 | `beforeMedia.downloadUrl` | `media_url` | |
 | `agencyResponsible` | `agency_responsible` | |
