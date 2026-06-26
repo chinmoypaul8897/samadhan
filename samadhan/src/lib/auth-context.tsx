@@ -12,6 +12,8 @@ import {
 import {
   onAuthStateChanged,
   signInAnonymously,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
 import {
@@ -25,7 +27,9 @@ import { db, getClientAuth } from "@/lib/firebase-client";
 
 export type LanguagePref = "en" | "hi";
 
-// Client-facing slice of users/{uid} (data-shapes.md §2).
+// Client-facing slice of users/{uid} (data-shapes.md §2). Officer-only fields are present
+// for seeded staff (the source of truth for authority remains the verified ID-token claim;
+// these are for display only — never trust them for authorization).
 export type CitizenProfile = {
   uid: string;
   role: "citizen" | "officer" | "admin";
@@ -33,6 +37,9 @@ export type CitizenProfile = {
   isAnonymous: boolean;
   languagePref: LanguagePref;
   fcmTokens: string[];
+  authorityId?: string | null;
+  department?: string | null;
+  jurisdictionWards?: string[];
 };
 
 type AuthState = {
@@ -40,6 +47,8 @@ type AuthState = {
   profile: CitizenProfile | null;
   loading: boolean;
   setLanguage: (lang: LanguagePref) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -78,6 +87,9 @@ async function ensureUserDoc(user: User): Promise<CitizenProfile> {
     isAnonymous: (data.isAnonymous as boolean) ?? user.isAnonymous,
     languagePref: (data.languagePref as LanguagePref) ?? "en",
     fcmTokens: (data.fcmTokens as string[]) ?? [],
+    authorityId: (data.authorityId as string | undefined) ?? null,
+    department: (data.department as string | undefined) ?? null,
+    jurisdictionWards: (data.jurisdictionWards as string[] | undefined) ?? [],
   };
 }
 
@@ -126,9 +138,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
+  // Officer sign-in (C8). Replaces the current (anonymous) session with the staff account;
+  // onAuthStateChanged then loads the seeded officer doc → profile.role flips to 'officer'.
+  // A fresh email sign-in mints a token carrying the custom claims the seed set. Throws the
+  // Firebase error so the login form can surface bad-credentials.
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    await signInWithEmailAndPassword(getClientAuth(), email.trim(), password);
+  }, []);
+
+  // Sign out → onAuthStateChanged fires null → the effect silently re-signs-in anonymously
+  // (back to a citizen session).
+  const signOut = useCallback(async () => {
+    await firebaseSignOut(getClientAuth());
+  }, []);
+
   const value = useMemo<AuthState>(
-    () => ({ user, profile, loading, setLanguage }),
-    [user, profile, loading, setLanguage],
+    () => ({ user, profile, loading, setLanguage, signInWithEmail, signOut }),
+    [user, profile, loading, setLanguage, signInWithEmail, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
