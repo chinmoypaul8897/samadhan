@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/firebase-admin";
 import { requireOfficer, assertJurisdiction } from "@/lib/claims";
 import { transition, type IssueStatus } from "@/lib/status";
+import { runVerify } from "@/genkit/steps/verify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +70,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       expectedFrom: issue.status, // optimistic guard against a concurrent move
       patch: Object.keys(patch).length ? patch : undefined,
     });
+
+    // On resolve, run the agent's before/after verdict (C9) before returning, so the verdict
+    // is already on the issue when the citizen opens. The resolve has already committed, so a
+    // verify failure is harmless (runVerify never throws). The brief wait is visible "the
+    // agent is verifying the fix" work on the officer's resolve tap.
+    if (act === "resolve") await runVerify(id);
 
     return Response.json({ ok: true, action: act, ...result });
   } catch (err) {

@@ -56,12 +56,27 @@ export type Filing = {
 };
 
 // Verification → issue.verification (data-shapes §8.6). Seeded at issue-create
-// ({required, beforeMediaPath}); the officer resolve (C8) adds afterMediaPath; the AI
-// verdict + citizen confirm land in C9.
+// ({required, beforeMediaPath}); the officer resolve (C8) adds afterMediaPath; the agent
+// verdict + citizen confirm land in C9. The verdict is advisory — only citizenConfirmed
+// (or outcome 'auto') finalises verified_resolved.
+export type AiVerdict = {
+  resolved: boolean;
+  confidence: number;
+  reasoning: string;
+  gpsMatch: boolean; // visual same-location stand-in (data-shapes §8.6 derivation note)
+  timestampMatch: boolean;
+  checkedAt?: Timestamp;
+};
+
 export type Verification = {
   required: boolean;
   beforeMediaPath: string;
   afterMediaPath?: string | null;
+  aiVerdict?: AiVerdict;
+  citizenConfirmed?: boolean;
+  confirmedByUid?: string | null;
+  outcome?: "verified" | "rejected" | "auto";
+  finalizedAt?: Timestamp | null;
 };
 
 export type IssueDoc = {
