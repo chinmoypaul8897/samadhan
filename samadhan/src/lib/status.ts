@@ -53,6 +53,10 @@ export type TransitionInput = {
   actorRole?: string | null;
   note?: string; // → statusNotes (reason); also used as the activity message if given
   expectedFrom?: IssueStatus; // optional optimistic guard against a stale read
+  // Extra issue-doc fields to write ATOMICALLY with the status flip (same txn). Used by C8
+  // officer actions: assign → {assignedOfficerUid}, resolve → {'verification.afterMediaPath'}.
+  // Dotted keys merge into nested maps. Status/statusNotes/updatedAt/resolvedAt always win.
+  patch?: Record<string, unknown>;
 };
 
 export type TransitionResult = { from: IssueStatus; to: IssueStatus };
@@ -68,7 +72,7 @@ export async function transition(
 ): Promise<TransitionResult> {
   const db = getDb();
   const issueRef = db.collection("issues").doc(issueId);
-  const { to, actorUid = null, actorRole = null, note, expectedFrom } = input;
+  const { to, actorUid = null, actorRole = null, note, expectedFrom, patch } = input;
 
   const committed = await db.runTransaction(async (tx) => {
     const snap = await tx.get(issueRef);
@@ -79,19 +83,21 @@ export async function transition(
     if (expectedFrom && expectedFrom !== from) throw new Error("STALE_STATUS");
     if (!isAllowed(from, to)) throw new Error("ILLEGAL_TRANSITION");
 
-    const patch: Record<string, unknown> = {
+    // Caller's extra fields first, so the status fields below always win on any key clash.
+    const update: Record<string, unknown> = {
+      ...(patch ?? {}),
       status: to,
       statusNotes: note ?? "",
       updatedAt: FieldValue.serverTimestamp(),
     };
-    if (to === "resolved_pending_verification") patch.resolvedAt = FieldValue.serverTimestamp();
-    if (to === "verified_resolved") patch.verifiedAt = FieldValue.serverTimestamp();
+    if (to === "resolved_pending_verification") update.resolvedAt = FieldValue.serverTimestamp();
+    if (to === "verified_resolved") update.verifiedAt = FieldValue.serverTimestamp();
     // Reopening clears the resolution so the SLA clock resumes against the live deadline.
     if (to === "reopened") {
-      patch.resolvedAt = null;
-      patch.verifiedAt = null;
+      update.resolvedAt = null;
+      update.verifiedAt = null;
     }
-    tx.update(issueRef, patch);
+    tx.update(issueRef, update);
 
     tx.set(issueRef.collection("activity").doc(), {
       type: "status_change",
