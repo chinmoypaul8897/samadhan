@@ -45,7 +45,9 @@ export function SlaClock({
       <p className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">SLA clock</p>
       <div className={cn("mt-1 flex items-baseline gap-2", TONE[state], state === "due_soon" && "animate-pulse")}>
         <span className="font-mono text-[28px] tabular-nums tracking-tight">
-          {formatRemaining(deadlineMs, now)}
+          {/* Resolved issues freeze the clock at the resolution moment — measure the
+              margin against the deadline then, not a live "breached by" against now. */}
+          {formatRemaining(deadlineMs, resolvedMs ?? now)}
         </span>
         <span className="font-mono text-[11px] uppercase tracking-[0.28px]">{NOTE[state]}</span>
       </div>
