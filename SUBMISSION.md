@@ -40,7 +40,7 @@ The loop actually closes, and "resolved" means something.
 - **Frictionless capture** — one tap: photo + auto-GPS, optional voice note (transcribed by Gemini), near-zero typing. Manual map-pin fallback when GPS is denied.
 - **Live agent console** — the pipeline animates step-by-step with per-step latency and Google-tech badges, so the agent's autonomy is *visible* (this is the core of Agentic Depth).
 - **Dedup & amplify** — duplicate reports merge into a single issue with a rising supporter count and a "me too" tap.
-- **Correct-authority routing + drafted complaint** — pothole → BBMP, water leak → BWSSB, power outage → BESCOM, each with a formal complaint drafted in the right department format and language (English/Hindi).
+- **Correct-authority routing + drafted complaint** — pothole → BBMP, water leak → BWSSB, power outage → BESCOM, each with a formal complaint drafted in the right department format, **in the citizen's own language** — auto-detected from their voice or text (English, Kannada and other Indian languages), so non-English speakers aren't shut out of civic redress.
 - **Real SLA tracking** — on-track / due-soon / breached states sourced from citizen-charter timeframes, with push notifications.
 - **Autonomous escalation** — reminder → appeal → RTI, drafted on breach by a Cloud Scheduler sweep, with one-tap send.
 - **Honest verification** — Gemini before/after verdict + mandatory citizen confirmation; reopen on a bad fix.

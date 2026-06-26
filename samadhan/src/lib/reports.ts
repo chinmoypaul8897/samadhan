@@ -98,7 +98,6 @@ export type ReportDoc = {
   media: MediaResult;
   voiceNote?: VoiceNoteRef;
   rawText?: string;
-  languagePref?: string;
   location: GeoPoint;
   geohash: string;
   accuracyM?: number;
@@ -123,7 +122,6 @@ export type CreateReportInput = {
   accuracyM?: number;
   rawText?: string;
   voiceBlob?: Blob | null;
-  languagePref?: string;
   onProgress?: UploadProgress;
 };
 
@@ -131,7 +129,7 @@ export type CreateReportInput = {
 // C2 gate the rules don't check (id === doc id, GeoPoint, 10-char geohash, 5 pending
 // steps). Returns the reportId. Kicks the pipeline fire-and-forget.
 export async function createReport(input: CreateReportInput): Promise<string> {
-  const { uid, file, lat, lng, accuracyM, rawText, voiceBlob, languagePref, onProgress } = input;
+  const { uid, file, lat, lng, accuracyM, rawText, voiceBlob, onProgress } = input;
 
   const reportId = doc(collection(db, "reports")).id;
   const blob = await downscaleImage(file);
@@ -165,9 +163,6 @@ export async function createReport(input: CreateReportInput): Promise<string> {
   if (typeof accuracyM === "number") data.accuracyM = Math.round(accuracyM);
   if (rawText && rawText.trim()) data.rawText = rawText.trim();
   if (voiceNote) data.voiceNote = voiceNote;
-  // The citizen's chosen complaint language (en|hi). Only persist the non-default so most
-  // docs stay lean; the intake's Act step files the complaint in it (overrides detected lang).
-  if (languagePref && languagePref !== "en") data.languagePref = languagePref;
 
   await setDoc(doc(db, "reports", reportId), data);
 
