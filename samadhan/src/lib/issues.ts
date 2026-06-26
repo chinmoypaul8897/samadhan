@@ -151,6 +151,10 @@ export function useIssue(issueId: string) {
   const [issue, setIssue] = useState<IssueDoc | null | undefined>(undefined);
   const [error, setError] = useState(false);
   useEffect(() => {
+    if (!issueId) {
+      setIssue(null);
+      return;
+    }
     const unsub = onSnapshot(
       doc(db, "issues", issueId),
       // Always derive `id` from the doc id (not a stored field) so issue.id is reliable

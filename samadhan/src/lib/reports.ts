@@ -211,6 +211,10 @@ export function useReport(reportId: string) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (!reportId) {
+      setReport(null);
+      return;
+    }
     const unsub = onSnapshot(
       doc(db, "reports", reportId),
       (snap) => setReport(snap.exists() ? (snap.data() as ReportDoc) : null),
