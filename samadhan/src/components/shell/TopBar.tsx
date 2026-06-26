@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { User as UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { LanguageToggle } from "./LanguageToggle";
 
-// Citizen top bar: wordmark · language toggle · notifications · profile.
+// Citizen top bar: wordmark · profile. (The complaint language is auto-detected from the
+// citizen's voice/text, so there's no manual language control here.)
 export function TopBar() {
   const { profile, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -25,8 +25,6 @@ export function TopBar() {
         </Link>
 
         <div className="flex items-center gap-1.5">
-          <LanguageToggle />
-
           <div className="relative">
             <button
               type="button"
