@@ -43,6 +43,7 @@ type ReportShape = {
   media: { path: string; downloadUrl: string; contentType: string; sizeBytes: number };
   voiceNote?: { path: string; downloadUrl: string; transcript?: string; language?: string };
   rawText?: string;
+  languagePref?: string;
   location: GeoPoint;
   geohash?: string;
   analysis?: PerceiveOutput;
@@ -68,6 +69,7 @@ async function runRouteAct(
   ref: DocumentReference,
   issueId: string,
   a: PerceiveOutput,
+  languagePref?: string,
 ): Promise<void> {
   const issueRef = db.collection("issues").doc(issueId);
   const issueSnap = await issueRef.get();
@@ -129,6 +131,10 @@ async function runRouteAct(
     pl = setStep(pl, "act", { status: "running", startedAt: Timestamp.now() });
     await ref.update({ pipeline: pl, updatedAt: FieldValue.serverTimestamp() });
 
+    // The citizen's chosen complaint language wins over the photo-detected language: a 'hi'
+    // preference files the complaint in Hindi regardless of what text the photo contained.
+    const targetLanguage = languagePref === "hi" ? "hi" : a.languageDetected;
+
     const t = Date.now();
     const filing = await ai.run("act", () =>
       act({
@@ -140,7 +146,7 @@ async function runRouteAct(
         addressString: issue.addressString,
         ward: issue.ward ?? null,
         trackingId: issue.trackingId,
-        languageDetected: a.languageDetected,
+        languageDetected: targetLanguage,
         authorityName: issue.agencyResponsible || auth?.name || shortName,
         authorityShortName: shortName,
         department: issue.routing!.department,
@@ -479,7 +485,7 @@ export const intakeFlow = ai.defineFlow(
     // Seeded issues only — linked reports inherit the parent's routing/filing (route + act
     // already 'skipped'). Idempotent: runRouteAct skips whatever is already done.
     if (currentIssueId && seeded && analysis) {
-      await runRouteAct(db, ref, currentIssueId, analysis);
+      await runRouteAct(db, ref, currentIssueId, analysis, report.languagePref);
     }
 
     return { status, serviceCode: analysis?.serviceCode, issueId: currentIssueId ?? undefined };
