@@ -14,9 +14,10 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { createReport } from "@/lib/reports";
 import { Button } from "@/components/ui/Button";
+import { MapPinPicker } from "./MapPinPicker";
 import { cn } from "@/lib/cn";
 
-type Loc = { lat: number; lng: number; accuracyM: number };
+type Loc = { lat: number; lng: number; accuracyM: number; manual?: boolean };
 type LocState =
   | { tag: "idle" }
   | { tag: "locating" }
@@ -24,8 +25,8 @@ type LocState =
   | { tag: "error"; code: number };
 
 // Capture flow (frontend-plan §D C2). Photo + auto-GPS + optional note → createReport.
-// GPS is required: denial is an error state with retry (no fake coordinate — that
-// would corrupt dedup/routing/the map downstream). The real map-pin fallback is C4.
+// GPS is required, but never faked: denial is an error state with a retry AND a manual map-pin
+// fallback (C12) so a citizen without GPS can still report by dropping a pin on the map.
 export function CaptureFlow() {
   const router = useRouter();
   const { user } = useAuth();
@@ -35,6 +36,7 @@ export function CaptureFlow() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [loc, setLoc] = useState<LocState>({ tag: "idle" });
+  const [pinOpen, setPinOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -153,7 +155,11 @@ export function CaptureFlow() {
             <RefreshCw className="size-4" strokeWidth={1.5} /> Retake
           </button>
 
-          <LocationChip state={loc} onRetry={requestLocation} />
+          <LocationChip
+            state={loc}
+            onRetry={requestLocation}
+            onManual={() => setPinOpen(true)}
+          />
 
           <label className="block">
             <span className="text-[13px] text-muted">Add a note (optional)</span>
@@ -194,6 +200,17 @@ export function CaptureFlow() {
           ) : null}
         </div>
       )}
+
+      {pinOpen ? (
+        <MapPinPicker
+          initial={loc.tag === "ok" ? { lat: loc.loc.lat, lng: loc.loc.lng } : undefined}
+          onConfirm={(p) => {
+            setLoc({ tag: "ok", loc: { lat: p.lat, lng: p.lng, accuracyM: 0, manual: true } });
+            setPinOpen(false);
+          }}
+          onClose={() => setPinOpen(false)}
+        />
+      ) : null}
     </main>
   );
 }
@@ -201,18 +218,30 @@ export function CaptureFlow() {
 function LocationChip({
   state,
   onRetry,
+  onManual,
 }: {
   state: LocState;
   onRetry: () => void;
+  onManual: () => void;
 }) {
   if (state.tag === "ok") {
     return (
       <div className="flex items-center gap-2 rounded-sm bg-wash-green px-3 py-2.5 text-[13px] text-brand">
         <MapPin className="size-4 shrink-0" strokeWidth={1.5} />
-        Location captured
-        <span className="font-mono text-[12px] text-muted">
-          ±{Math.round(state.loc.accuracyM)}m
-        </span>
+        {state.loc.manual ? "Location set on the map" : "Location captured"}
+        {state.loc.manual ? (
+          <button
+            type="button"
+            onClick={onManual}
+            className="ml-auto text-[12px] text-brand underline underline-offset-4"
+          >
+            Adjust
+          </button>
+        ) : (
+          <span className="font-mono text-[12px] text-muted">
+            ±{Math.round(state.loc.accuracyM)}m
+          </span>
+        )}
       </div>
     );
   }
@@ -235,15 +264,24 @@ function LocationChip({
           <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.5} />
           <span>{msg}</span>
         </div>
-        <button
-          type="button"
-          onClick={onRetry}
-          className={cn(
-            "mt-2 inline-flex items-center gap-1.5 text-[13px] text-ink underline underline-offset-4",
-          )}
-        >
-          <RefreshCw className="size-3.5" strokeWidth={1.5} /> Retry location
-        </button>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          <button
+            type="button"
+            onClick={onRetry}
+            className={cn(
+              "inline-flex items-center gap-1.5 text-[13px] text-ink underline underline-offset-4",
+            )}
+          >
+            <RefreshCw className="size-3.5" strokeWidth={1.5} /> Retry location
+          </button>
+          <button
+            type="button"
+            onClick={onManual}
+            className="inline-flex items-center gap-1.5 text-[13px] text-ink underline underline-offset-4"
+          >
+            <MapPin className="size-3.5" strokeWidth={1.5} /> Set location manually
+          </button>
+        </div>
       </div>
     );
   }
