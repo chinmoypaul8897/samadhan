@@ -109,6 +109,7 @@ export type IssueDoc = {
   verification?: Verification;
   sla: Sla;
   escalationLevel: number;
+  lastEscalatedAt?: Timestamp | null;
   assignedOfficerUid?: string | null;
   reporterUid: string;
   tags: string[];
@@ -127,6 +128,22 @@ export type ActivityItem = {
   fromStatus?: string;
   toStatus?: string;
   createdAt?: Timestamp;
+};
+
+// issues/{id}/escalations/{eid} (data-shapes §6). Drafted by the C10 sweep on SLA breach;
+// flipped to 'sent' by the citizen's one-tap consent. Read = reporter + staff (rules §12).
+export type Escalation = {
+  id: string;
+  type: "reminder" | "higher_authority_appeal" | "rti_draft" | "social_post";
+  status: "drafted" | "approved" | "sent" | "acknowledged";
+  channel: string;
+  content: string;
+  target: string;
+  triggerReason: string;
+  reasoning?: string;
+  approvedByUid?: string | null;
+  createdAt?: Timestamp;
+  sentAt?: Timestamp | null;
 };
 
 /** Live issue (data-shapes §6). undefined = loading, null = not found. */
@@ -159,6 +176,24 @@ export function useActivity(issueId: string) {
       q,
       (snap) => setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ActivityItem, "id">) }))),
       (err) => console.error("[useActivity]", err),
+    );
+    return () => unsub();
+  }, [issueId]);
+  return items;
+}
+
+/** Live escalations (newest first) — the agent's drafted reminders/appeals/RTI (C10). */
+export function useEscalations(issueId: string) {
+  const [items, setItems] = useState<Escalation[]>([]);
+  useEffect(() => {
+    const q = query(
+      collection(db, "issues", issueId, "escalations"),
+      orderBy("createdAt", "desc"),
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Escalation, "id">) }))),
+      (err) => console.error("[useEscalations]", err),
     );
     return () => unsub();
   }, [issueId]);

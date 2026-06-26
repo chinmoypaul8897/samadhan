@@ -13,6 +13,7 @@ import { FilingCard } from "./FilingCard";
 import { BreachBanner } from "./BreachBanner";
 import { NotificationOptIn } from "./NotificationOptIn";
 import { VerifyCard } from "./VerifyCard";
+import { EscalationCard } from "./EscalationCard";
 import { cn } from "@/lib/cn";
 
 // Issue Detail (frontend-plan §D C4) — the tracked, deadlined issue. Public read.
@@ -88,6 +89,9 @@ export function IssueDetail({ issueId }: { issueId: string }) {
             slaHours={issue.sla.slaHours}
             resolvedAt={issue.resolvedAt ?? null}
           />
+
+          {/* Escalation (C10) — renders only when the agent has drafted escalations on breach. */}
+          <EscalationCard issueId={issue.id} reporterUid={issue.reporterUid} />
 
           <NotificationOptIn reporterUid={issue.reporterUid} />
 
