@@ -3,6 +3,7 @@ import { getApps, initializeApp, applicationDefault, type App } from "firebase-a
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { getMessaging } from "firebase-admin/messaging";
+import { getAuth } from "firebase-admin/auth";
 
 // On Cloud Run, the project comes from the metadata server / env (ADC).
 const PROJECT_ID =
@@ -24,6 +25,7 @@ function ensureApp(): App {
 export const getDb = () => getFirestore(ensureApp());
 export const getBucket = () => getStorage(ensureApp()).bucket();
 export const getMsg = () => getMessaging(ensureApp());
+export const getAdminAuth = () => getAuth(ensureApp());
 
 /** Lightweight readiness probe for /api/health — never throws. */
 export function adminHealth(): { adminReady: boolean; projectId: string | null } {
