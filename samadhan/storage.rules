@@ -22,8 +22,18 @@ service firebase.storage {
             || request.resource.contentType.matches('audio/.*'));
     }
 
-    // Issue media (representative before / resolution after). Public read; the
-    // officer after-proof write rule lands in C8. Admin writes bypass rules.
+    // Officer proof-of-fix (C8): a signed-in officer/admin uploads the resolution
+    // photo to issues/{id}/after/{uid}.jpg. More specific than the recursive match
+    // below; Storage grants on ANY matching allow, so this staff-write ORs over it.
+    match /issues/{issueId}/after/{fileName} {
+      allow read: if true;
+      allow write: if isStaff()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Issue media (representative before / other). Public read; everything else
+    // here is written by the Admin SDK, which bypasses rules.
     match /issues/{issueId}/{allPaths=**} {
       allow read: if true;
       allow write: if false;

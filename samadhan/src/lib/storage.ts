@@ -50,14 +50,13 @@ export async function downscaleImage(file: File): Promise<Blob> {
   }
 }
 
-export async function uploadReportPhoto(
-  uid: string,
-  reportId: string,
+/** Resumable upload of a blob to an exact Storage path. Returns path + tokened downloadUrl. */
+export async function uploadImage(
+  path: string,
   blob: Blob,
   onProgress?: UploadProgress,
 ): Promise<MediaResult> {
   const contentType = blob.type || "image/jpeg";
-  const path = `reports/${uid}/${reportId}/original.jpg`;
   const task = uploadBytesResumable(ref(storage, path), blob, { contentType });
 
   await new Promise<void>((resolve, reject) => {
@@ -72,4 +71,24 @@ export async function uploadReportPhoto(
 
   const downloadUrl = await getDownloadURL(task.snapshot.ref);
   return { path, downloadUrl, contentType, sizeBytes: blob.size };
+}
+
+/** Citizen capture photo → reports/{uid}/{reportId}/original.jpg (data-shapes §7). */
+export function uploadReportPhoto(
+  uid: string,
+  reportId: string,
+  blob: Blob,
+  onProgress?: UploadProgress,
+): Promise<MediaResult> {
+  return uploadImage(`reports/${uid}/${reportId}/original.jpg`, blob, onProgress);
+}
+
+/** Officer proof-of-fix → issues/{issueId}/after/{uid}.jpg (C8; staff-write Storage rule). */
+export function uploadAfterPhoto(
+  issueId: string,
+  uid: string,
+  blob: Blob,
+  onProgress?: UploadProgress,
+): Promise<MediaResult> {
+  return uploadImage(`issues/${issueId}/after/${uid}.jpg`, blob, onProgress);
 }
