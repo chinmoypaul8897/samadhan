@@ -18,6 +18,7 @@ type IssueData = {
   supporterCount?: number;
   trackingId?: string;
   title?: string;
+  ward?: string | null;
   beforeMedia?: { downloadUrl?: string };
   verification?: { afterMediaPath?: string | null };
   createdAt?: { toMillis(): number };
@@ -66,6 +67,7 @@ export async function GET() {
 
     const byStatus: Record<string, number> = {};
     const byGroup: Record<string, number> = {};
+    const byWard: Record<string, { open: number; breached: number }> = {};
     const resolveHours: number[] = [];
     const resolvedItems: ResolvedItem[] = [];
     let total = 0;
@@ -117,6 +119,14 @@ export async function GET() {
           breachedCount++;
         }
       }
+
+      // Per-ward open/overdue tally for the "recurring hotspots" insight.
+      const ward = (d.ward ?? "").trim();
+      if (ward && ACTIVE.has(status)) {
+        const w = (byWard[ward] ??= { open: 0, breached: 0 });
+        w.open++;
+        if (deadlineMs != null && resolvedMs == null && now > deadlineMs) w.breached++;
+      }
     }
 
     // Newest verified fixes first, lean DTO (drop the internal sort key).
@@ -132,6 +142,14 @@ export async function GET() {
         resolveHours: r.resolveHours,
       }));
 
+    // Recurring hotspots — wards with the most OPEN issues right now. Descriptive (a live count
+    // of where issues cluster), NOT a forecast — we don't fabricate ML "predictions".
+    const hotspots = Object.entries(byWard)
+      .filter(([, w]) => w.open >= 2)
+      .sort((a, b) => b[1].open - a[1].open || b[1].breached - a[1].breached)
+      .slice(0, 3)
+      .map(([ward, w]) => ({ ward, open: w.open, breached: w.breached }));
+
     return Response.json({
       ok: true,
       total,
@@ -143,6 +161,7 @@ export async function GET() {
       citizensHelped,
       byStatus,
       byGroup,
+      hotspots,
       recentlyResolved,
     });
   } catch (err) {

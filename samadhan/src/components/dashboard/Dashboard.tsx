@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { MapPin } from "lucide-react";
 import { DarkFeatureBand } from "@/components/ui/DarkFeatureBand";
 import { StatCard } from "@/components/ui/StatCard";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -24,6 +25,7 @@ type Stats = {
   citizensHelped: number;
   byStatus: Record<string, number>;
   byGroup: Record<string, number>;
+  hotspots?: { ward: string; open: number; breached: number }[];
   recentlyResolved: ResolvedItem[];
 };
 type GeoP = {
@@ -181,6 +183,31 @@ export function Dashboard() {
             <StatCard value={stats?.total ?? 0} label="Issues tracked" sublabel="across the city" delayMs={240} />
             <StatCard value={stats?.breachedCount ?? 0} label="Now overdue" sublabel="agent escalating" delayMs={300} />
           </section>
+
+          {/* Recurring hotspots — descriptive (where issues cluster now), not a forecast */}
+          {stats?.hotspots && stats.hotspots.length > 0 ? (
+            <section className="mt-6">
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">
+                Recurring hotspots
+              </h2>
+              <p className="mt-1 text-[13px] text-muted">Wards with the most open issues right now.</p>
+              <ul className="mt-3 divide-y divide-hairline overflow-hidden rounded-md border border-hairline">
+                {stats.hotspots.map((h) => (
+                  <li key={h.ward} className="flex items-center justify-between px-4 py-3">
+                    <span className="flex items-center gap-2 text-[15px] text-ink">
+                      <MapPin className="size-4 text-brand" strokeWidth={1.75} /> {h.ward}
+                    </span>
+                    <span className="font-mono text-[13px] text-muted">
+                      {h.open} open
+                      {h.breached > 0 ? (
+                        <> · <span className="text-danger">{h.breached} overdue</span></>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           {/* Recently-resolved before/after proof */}
           <RecentlyResolved items={stats?.recentlyResolved ?? []} />
