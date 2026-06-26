@@ -37,7 +37,7 @@ export function EmptyState({
 }
 
 const ACTION_CLS =
-  "mt-5 inline-flex min-h-[44px] items-center rounded-pill bg-brand px-5 py-2.5 text-[14px] font-medium text-on-dark transition active:scale-[0.97]";
+  "mt-5 inline-flex min-h-11 items-center rounded-pill bg-brand px-5 py-2.5 text-[14px] font-medium text-on-dark transition active:scale-[0.97]";
 
 function ActionButton({ action }: { action: Action }) {
   if ("href" in action)

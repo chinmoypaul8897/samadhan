@@ -34,7 +34,7 @@ export function ErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-5 inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-hairline px-5 py-2.5 text-[14px] font-medium text-ink transition hover:bg-stone active:scale-[0.97]"
+          className="mt-5 inline-flex min-h-11 items-center gap-1.5 rounded-pill border border-hairline px-5 py-2.5 text-[14px] font-medium text-ink transition hover:bg-stone active:scale-[0.97]"
         >
           <RefreshCw className="size-4" strokeWidth={1.75} /> {retryLabel}
         </button>
