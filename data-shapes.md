@@ -324,6 +324,8 @@ EscalateOutput {
 }
 ```
 
+> **C10 derivation note.** The **Gemini** call returns only `{content, reasoning}` (the drafted text + why); `type`/`target`/`channel`/`triggerReason` are set **in code** from the breach rung (`escalationLevel+1`) + `authority.escalationContacts` (titles only — the agent never fabricates a name/handle, mirroring C6 "Route is rules"). Rungs: L1 `reminder` (grievance desk) → L2 `higher_authority_appeal` (next escalation contact) → L3 `rti_draft` (PIO). `social_post` is an available type but not a default rung (no real handle is seeded).
+
 ### 8.6 Verify → `issue.verification`
 ```ts
 Verification {

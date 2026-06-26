@@ -47,6 +47,17 @@ export const VerifyVerdict = z.object({
 
 export type VerifyVerdict = z.infer<typeof VerifyVerdict>;
 
+// Escalate → escalations/{id}.content (data-shapes §8.5). Gemini drafts ONLY the text +
+// reasoning; the type/target/channel/triggerReason are set in code from the breach rung +
+// the authority's escalation ladder (titles only — no fabricated names/handles, mirroring
+// C6 "Route is rules"). Flat object, no z.union.
+export const EscalateDraft = z.object({
+  content: z.string(),
+  reasoning: z.string(),
+});
+
+export type EscalateDraft = z.infer<typeof EscalateDraft>;
+
 // Route → issue.routing (data-shapes §8.3). NOT a Gemini output — routing is a
 // deterministic rules lookup (serviceCode → defaultAuthorityType → the single authority
 // of that type in the city). This schema is the persisted/typed mirror, built in code.
