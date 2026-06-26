@@ -21,9 +21,17 @@ export default function Home() {
           authority, tracks the SLA, and proves the fix — from report to
           resolution.
         </p>
-        <Link href="/report" className={buttonClasses("brand", "mt-6")}>
-          Report an issue
-        </Link>
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <Link href="/report" className={buttonClasses("brand")}>
+            Report an issue
+          </Link>
+          <Link
+            href="/dashboard"
+            className="text-[14px] text-ink underline underline-offset-4 transition hover:text-link"
+          >
+            See the public impact →
+          </Link>
+        </div>
       </section>
 
       <section

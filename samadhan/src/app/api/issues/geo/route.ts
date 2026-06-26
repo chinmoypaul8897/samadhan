@@ -12,6 +12,7 @@ const SCAN_LIMIT = 500;
 type IssueData = {
   status?: string;
   severity?: string;
+  group?: string;
   serviceCode?: string;
   trackingId?: string;
   title?: string;
@@ -32,6 +33,7 @@ export async function GET() {
           lng: d.location.longitude,
           severity: d.severity ?? "medium",
           status: d.status ?? "submitted",
+          group: d.group ?? "other",
           serviceCode: d.serviceCode ?? "other",
           trackingId: d.trackingId ?? "",
           title: d.title ?? "",
