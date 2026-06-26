@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, TriangleAlert, Search, RotateCcw, ArrowRight } from "lucide-react";
+import { ArrowLeft, TriangleAlert, Search, RotateCcw, ArrowRight, Mic } from "lucide-react";
 import { useReport, type PerceiveAnalysis } from "@/lib/reports";
 import { PipelineSteps } from "./PipelineSteps";
 import { MergeCelebration } from "./MergeCelebration";
@@ -92,6 +92,16 @@ export function ProcessingView({ reportId }: { reportId: string }) {
               </p>
             </header>
           )}
+
+          {report.voiceNote?.transcript ? (
+            <div className="mt-4 flex items-start gap-2 rounded-md border border-hairline bg-stone/40 px-3 py-2.5 text-[13px] text-ink/80">
+              <Mic className="mt-0.5 size-4 shrink-0 text-brand" strokeWidth={1.75} />
+              <span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">Heard</span>
+                <br />“{report.voiceNote.transcript}”
+              </span>
+            </div>
+          ) : null}
 
           {report.analysis && report.status !== "rejected" ? (
             <div className="mt-4">

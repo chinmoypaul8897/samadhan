@@ -1,6 +1,7 @@
 import "server-only";
 import { ai, z } from "@/genkit/index";
 import { perceive } from "@/genkit/steps/perceive";
+import { transcribe } from "@/genkit/steps/transcribe";
 import { locate } from "@/genkit/steps/locate";
 import { dedup, ACTIVE_ISSUE_STATUSES } from "@/genkit/steps/dedup";
 import { route } from "@/genkit/steps/route";
@@ -40,6 +41,7 @@ type ReportShape = {
   reporterUid: string;
   status: string;
   media: { path: string; downloadUrl: string; contentType: string; sizeBytes: number };
+  voiceNote?: { path: string; downloadUrl: string; transcript?: string; language?: string };
   rawText?: string;
   location: GeoPoint;
   geohash?: string;
@@ -199,9 +201,26 @@ export const intakeFlow = ai.defineFlow(
       pipeline[pi] = { ...pipeline[pi], status: "running", startedAt: Timestamp.now() };
       await ref.update({ pipeline, updatedAt: FieldValue.serverTimestamp() });
 
+      // Voice transcription (C13) — if the citizen attached a voice note, Gemini transcribes it
+      // (a "transcribe" span before Perceive) and we feed the transcript into Perceive as
+      // rawText so it informs classification + languageDetected. Best-effort; never blocks.
+      let effectiveRawText = report.rawText;
+      if (report.voiceNote?.path && !report.voiceNote.transcript) {
+        const vpath = report.voiceNote.path;
+        const vt = await ai.run("transcribe", () => transcribe(vpath));
+        if (vt) {
+          effectiveRawText = [report.rawText, vt.transcript].filter(Boolean).join(" — ");
+          await ref.update({
+            "voiceNote.transcript": vt.transcript,
+            "voiceNote.language": vt.language,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
       const t0 = Date.now();
       analysis = await ai.run("perceive", () =>
-        perceive({ mediaPath: report.media.path, rawText: report.rawText }),
+        perceive({ mediaPath: report.media.path, rawText: effectiveRawText }),
       );
       const latencyMs = Date.now() - t0;
       const finishedAt = Timestamp.now();

@@ -22,6 +22,17 @@ export const PerceiveOutput = z.object({
 
 export type PerceiveOutput = z.infer<typeof PerceiveOutput>;
 
+// Transcribe → report.voiceNote.transcript (C13, data-shapes §7). Gemini transcribes the
+// citizen's voice note (audio) verbatim and reports its language; the transcript is fed into
+// Perceive as rawText so it informs classification + languageDetected (→ Act drafts in Hindi).
+// Flat object, no z.union — same constrained-generation discipline.
+export const TranscribeOutput = z.object({
+  transcript: z.string(),
+  language: z.string(),
+});
+
+export type TranscribeOutput = z.infer<typeof TranscribeOutput>;
+
 // Dedup → report.dedup (data-shapes §8.2). Gemini compares the new report photo to a
 // nearby same-category issue's photo and decides if they're the SAME physical problem
 // (same pothole/pile/pole), not merely the same category. Flat object, no z.union.
