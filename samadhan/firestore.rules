@@ -77,6 +77,13 @@ service cloud.firestore {
         allow create: if isOwner(uid); // full "me too" flow lands in C13
         allow update, delete: if false;
       }
+
+      // Community fix-verification votes (fixed | broken). Server-only write — the Admin
+      // endpoint increments verification.community*Count atomically; public read.
+      match /fixConfirmations/{uid} {
+        allow read: if true;
+        allow write: if false;
+      }
     }
   }
 }

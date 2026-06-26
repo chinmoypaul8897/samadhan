@@ -31,7 +31,8 @@ reports/{reportId}               ONE citizen submission; runs the intake pipelin
 issues/{issueId}                 the canonical, de-duplicated physical problem  (= Open311 service request)
    ├─ activity/{activityId}      lifecycle timeline (status changes, officer actions)
    ├─ escalations/{escalationId} RTI / appeal / social drafts generated on SLA breach
-   └─ confirmations/{uid}        one-tap "me too" [T2]
+   ├─ confirmations/{uid}        one-tap "me too" [T2]
+   └─ fixConfirmations/{uid}     community fix-verification votes (fixed | broken) [T2]
 
 Relationships:
   report.reporterUid → users/{uid}
@@ -241,6 +242,9 @@ The de-duplicated physical issue. Surfaces: citizen tracking, officer portal, pu
 ### `issues/{id}/confirmations/{uid}` [T2]  — one-tap "me too"
 `{ uid: string; comment?: string; createdAt: Timestamp }` (doc ID = uid → one per user; increments `supporterCount`).
 
+### `issues/{id}/fixConfirmations/{uid}` [T2]  — community fix-verification
+`{ uid: string; verdict: 'fixed'|'broken'; createdAt: Timestamp }` (doc ID = uid → one per user). On a `resolved_pending_verification` issue, *affected* citizens (not the reporter) confirm or dispute the officer's fix. **Advisory** — increments `verification.communityFixedCount`/`communityBrokenCount` for display; it does **not** change status (only the reporter's confirm or the auto-verify sweep finalises `verified_resolved`, per §8.6). Server-only write (the Admin endpoint increments the counter atomically); public read.
+
 ---
 
 ## 7. Cloud Storage layout + media shapes
@@ -339,6 +343,8 @@ Verification {
   confirmedByUid?: string;
   outcome?: 'verified'|'rejected'|'auto';   // 'auto' = grace-window auto-confirm
   finalizedAt?: Timestamp;
+  communityFixedCount?: number;             // [T2] affected-citizen "looks fixed" votes (advisory)
+  communityBrokenCount?: number;            // [T2] affected-citizen "still broken" votes (advisory)
 }
 ```
 Rule: `status='verified_resolved'` only when `citizenConfirmed===true` **or** `outcome==='auto'`. AI verdict alone never finalises (CLAUDE.md anti-pattern: no one-click resolved).

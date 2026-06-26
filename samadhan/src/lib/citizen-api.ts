@@ -51,3 +51,16 @@ export async function supportIssue(issueId: string): Promise<{ already: boolean 
   const json = (await res.json().catch(() => ({}))) as { already?: boolean };
   return { already: Boolean(json.already) };
 }
+
+/** Community fix-verification — an affected citizen confirms/disputes the officer's fix (advisory). */
+export async function confirmFix(
+  issueId: string,
+  verdict: "fixed" | "broken",
+): Promise<{ already: boolean }> {
+  const res = await authedFetch(`/api/issues/${issueId}/fix-confirm`, {
+    method: "POST",
+    body: JSON.stringify({ verdict }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { already?: boolean };
+  return { already: Boolean(json.already) };
+}

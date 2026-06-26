@@ -79,11 +79,11 @@ const WARD = {
 // ── the canonical spread: all groups, the full status machine, 4 verified (before+after),
 // 1 pending-verify, 1 breached+escalated, 1 breached, varied supporterCount + 2 hotspots ──
 const SPREAD = [
-  { key: "korpot", code: "pothole", ward: "Koramangala", jit: [0.0008, 0.0006], sev: "high", hazard: false, status: "verified_resolved", supporters: 14, createdAgo: 30, resolvedAgo: 12, title: "Deep pothole near Sony World junction" },
-  { key: "indgar", code: "garbage_dump", ward: "Indiranagar", jit: [0.0009, -0.0005], sev: "medium", hazard: false, status: "verified_resolved", supporters: 9, createdAgo: 26, resolvedAgo: 14, title: "Garbage pile-up on 100ft Road service lane" },
+  { key: "korpot", code: "pothole", ward: "Koramangala", jit: [0.0008, 0.0006], sev: "high", hazard: false, status: "verified_resolved", supporters: 14, createdAgo: 30, resolvedAgo: 12, communityFixed: 6, title: "Deep pothole near Sony World junction" },
+  { key: "indgar", code: "garbage_dump", ward: "Indiranagar", jit: [0.0009, -0.0005], sev: "medium", hazard: false, status: "verified_resolved", supporters: 9, createdAgo: 26, resolvedAgo: 14, communityFixed: 3, title: "Garbage pile-up on 100ft Road service lane" },
   { key: "jaystr", code: "streetlight", ward: "Jayanagar", jit: [-0.0006, 0.0007], sev: "low", hazard: false, status: "verified_resolved", supporters: 5, createdAgo: 40, resolvedAgo: 10, title: "Dark stretch — streetlight out near 4th Block" },
   { key: "korani", code: "dead_animal", ward: "Koramangala", jit: [-0.0007, -0.0008], sev: "medium", hazard: false, status: "verified_resolved", supporters: 3, createdAgo: 50, resolvedAgo: 8, title: "Animal carcass on the 80ft Road median" },
-  { key: "hebwat", code: "water_leak", ward: "Hebbal", jit: [0.0005, 0.0004], sev: "high", hazard: false, status: "resolved_pending_verification", supporters: 7, createdAgo: 20, resolvedAgo: 3, title: "Burst water line flooding the underpass approach" },
+  { key: "hebwat", code: "water_leak", ward: "Hebbal", jit: [0.0005, 0.0004], sev: "high", hazard: false, status: "resolved_pending_verification", supporters: 7, createdAgo: 20, resolvedAgo: 3, communityFixed: 4, communityBroken: 1, title: "Burst water line flooding the underpass approach" },
   { key: "shisew", code: "sewer_overflow", ward: "Shivajinagar", jit: [0.0006, -0.0006], sev: "high", hazard: true, status: "in_progress", supporters: 11, createdAgo: 30, breached: true, escalated: true, title: "Sewer overflowing onto the footpath" },
   { key: "korpow", code: "power_outage", ward: "Koramangala", jit: [0.0003, -0.0009], sev: "high", hazard: false, status: "in_progress", supporters: 6, createdAgo: 8, title: "Transformer failure — 6th Block without power" },
   { key: "malpot", code: "pothole", ward: "Malleshwaram", jit: [0.0004, 0.0005], sev: "medium", hazard: false, status: "acknowledged", supporters: 3, createdAgo: 10, title: "Pothole cluster near Mantri Mall" },
@@ -157,7 +157,7 @@ function journey(s, c, a, officer, createdMs, endMs) {
 }
 
 async function deleteIssue(doc) {
-  for (const sub of ["activity", "escalations"]) {
+  for (const sub of ["activity", "escalations", "confirmations", "fixConfirmations"]) {
     const subSnap = await doc.ref.collection(sub).get();
     let batch = db.batch();
     subSnap.docs.forEach((d) => batch.delete(d.ref));
@@ -221,6 +221,8 @@ async function seedOne(s) {
     verification.outcome = "verified";
     verification.finalizedAt = Timestamp.fromMillis(verifiedMs);
   }
+  if (s.communityFixed) verification.communityFixedCount = s.communityFixed;
+  if (s.communityBroken) verification.communityBrokenCount = s.communityBroken;
 
   const issue = {
     id,
@@ -271,6 +273,16 @@ async function seedOne(s) {
   let batch = db.batch();
   for (const r of rows) batch.set(ref.collection("activity").doc(), r);
   await batch.commit();
+
+  // Community fix-votes (advisory) on the pending/verified issues — synthetic neighbour uids.
+  if (s.communityFixed || s.communityBroken) {
+    let fb = db.batch();
+    for (let i = 0; i < (s.communityFixed || 0); i++)
+      fb.set(ref.collection("fixConfirmations").doc(`fixvote-${s.key}-${i}`), { uid: `fixvote-${s.key}-${i}`, verdict: "fixed", createdAt: at(s.resolvedAgo ?? 1) });
+    for (let i = 0; i < (s.communityBroken || 0); i++)
+      fb.set(ref.collection("fixConfirmations").doc(`brokvote-${s.key}-${i}`), { uid: `brokvote-${s.key}-${i}`, verdict: "broken", createdAt: at(s.resolvedAgo ?? 1) });
+    await fb.commit();
+  }
 
   if (s.escalated) {
     await ref.collection("escalations").doc().set({

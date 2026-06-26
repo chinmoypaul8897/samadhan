@@ -77,6 +77,8 @@ export type Verification = {
   confirmedByUid?: string | null;
   outcome?: "verified" | "rejected" | "auto";
   finalizedAt?: Timestamp | null;
+  communityFixedCount?: number; // [T2] affected-citizen "looks fixed" votes (advisory)
+  communityBrokenCount?: number; // [T2] affected-citizen "still broken" votes (advisory)
 };
 
 export type IssueDoc = {
@@ -208,6 +210,28 @@ export function useHasSupported(issueId: string, uid?: string | null) {
     return () => unsub();
   }, [issueId, uid]);
   return supported;
+}
+
+/**
+ * The current user's community fix-vote on an issue, live (data-shapes §6 fixConfirmations,
+ * public-read). Returns 'fixed' | 'broken' if they've voted, null if not, undefined while
+ * loading / for a falsy uid. Guards a falsy uid like useHasSupported.
+ */
+export function useFixVote(issueId: string, uid?: string | null) {
+  const [vote, setVote] = useState<"fixed" | "broken" | null | undefined>(undefined);
+  useEffect(() => {
+    if (!issueId || !uid) {
+      setVote(undefined);
+      return;
+    }
+    const unsub = onSnapshot(
+      doc(db, "issues", issueId, "fixConfirmations", uid),
+      (snap) => setVote(snap.exists() ? ((snap.data().verdict as "fixed" | "broken") ?? null) : null),
+      (err) => console.error("[useFixVote]", err),
+    );
+    return () => unsub();
+  }, [issueId, uid]);
+  return vote;
 }
 
 /** Live escalations (newest first) — the agent's drafted reminders/appeals/RTI (C10). */
