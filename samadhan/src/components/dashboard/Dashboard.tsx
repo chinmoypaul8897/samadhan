@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { DarkFeatureBand } from "@/components/ui/DarkFeatureBand";
 import { StatCard } from "@/components/ui/StatCard";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { MapHeatmap } from "@/components/dashboard/MapHeatmap";
 import { useCountUp } from "@/lib/useCountUp";
 import { buttonClasses } from "@/components/ui/Button";
@@ -40,21 +41,24 @@ export function Dashboard() {
   const [error, setError] = useState(false);
   const [group, setGroup] = useState("all");
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [s, g] = await Promise.all([
-          fetch("/api/stats").then((r) => r.json()),
-          fetch("/api/issues/geo").then((r) => r.json()),
-        ]);
-        if (!s.ok || !g.ok) throw new Error("load failed");
-        setStats(s as Stats);
-        setPoints(g.points as GeoP[]);
-      } catch {
-        setError(true);
-      }
-    })();
+  const load = useCallback(async () => {
+    setError(false);
+    try {
+      const [s, g] = await Promise.all([
+        fetch("/api/stats").then((r) => r.json()),
+        fetch("/api/issues/geo").then((r) => r.json()),
+      ]);
+      if (!s.ok || !g.ok) throw new Error("load failed");
+      setStats(s as Stats);
+      setPoints(g.points as GeoP[]);
+    } catch {
+      setError(true);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const shownPoints = useMemo(
     () => (points ?? []).filter((p) => group === "all" || p.group === group),
@@ -88,7 +92,12 @@ export function Dashboard() {
       </DarkFeatureBand>
 
       {error ? (
-        <Notice>Couldn’t load the public stats right now.</Notice>
+        <ErrorState
+          className="mt-6"
+          title="Couldn’t load the public stats"
+          hint="The figures are live from Firestore — try again in a moment."
+          onRetry={() => void load()}
+        />
       ) : (
         <>
           {/* Hotspot map + category filter */}
@@ -146,13 +155,5 @@ export function Dashboard() {
         </>
       )}
     </main>
-  );
-}
-
-function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-6 rounded-md border border-dashed border-hairline px-4 py-10 text-center text-[14px] text-muted">
-      {children}
-    </div>
   );
 }

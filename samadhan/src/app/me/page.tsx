@@ -5,6 +5,8 @@ import { ClipboardList } from "lucide-react";
 import type { Timestamp } from "firebase/firestore";
 import { useAuth } from "@/lib/auth-context";
 import { useMyReports, type ReportDoc, type ReportStatus } from "@/lib/reports";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { cn } from "@/lib/cn";
 
 const STATUS_LABEL: Record<ReportStatus, string> = {
@@ -40,11 +42,19 @@ export default function ActivityPage() {
 
       <div className="mt-6">
         {error ? (
-          <Notice>Couldn’t load your reports — check your connection.</Notice>
+          <ErrorState
+            title="Couldn’t load your reports"
+            hint="Check your connection and try again."
+          />
         ) : loading || reports === null ? (
           <ListSkeleton />
         ) : reports.length === 0 ? (
-          <EmptyState />
+          <EmptyState
+            icon={ClipboardList}
+            title="No reports yet"
+            hint="Snap your first civic issue and it’ll show up here with a live SLA clock."
+            action={{ label: "Report an issue", href: "/report" }}
+          />
         ) : (
           <ul className="space-y-3">
             {reports.map((r) => (
@@ -98,32 +108,6 @@ function relativeTime(ts?: Timestamp): string {
   const hrs = Math.round(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.round(hrs / 24)}d ago`;
-}
-
-function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-md border border-dashed border-hairline px-4 py-8 text-center text-[14px] text-muted">
-      {children}
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-hairline px-6 py-16 text-center">
-      <ClipboardList className="size-8 text-muted" strokeWidth={1.5} />
-      <p className="mt-4 font-sans text-[15px] text-ink">No reports yet</p>
-      <p className="mt-1 max-w-xs text-[13px] text-muted">
-        Snap your first civic issue and it’ll show up here with a live SLA clock.
-      </p>
-      <Link
-        href="/report"
-        className="mt-5 rounded-pill bg-brand px-5 py-2.5 text-[14px] font-medium text-on-dark transition active:scale-[0.97]"
-      >
-        Report an issue
-      </Link>
-    </div>
-  );
 }
 
 function ListSkeleton() {

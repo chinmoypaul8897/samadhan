@@ -5,6 +5,8 @@ import { Inbox, RefreshCw } from "lucide-react";
 import { fetchQueue, type QueueIssue } from "@/lib/officer-api";
 import { OfficerIssueCard } from "./OfficerIssueCard";
 import { DarkFeatureBand } from "@/components/ui/DarkFeatureBand";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { cn } from "@/lib/cn";
 
 // Officer queue (frontend-plan §D C8). DarkFeatureBand header with counts, then the
@@ -109,7 +111,10 @@ export function OfficerQueue() {
       {/* List / states */}
       <div className="mt-4">
         {error ? (
-          <Notice>Couldn’t load the queue. Tap refresh to try again.</Notice>
+          <ErrorState
+            title="Couldn’t load the queue"
+            onRetry={() => void load()}
+          />
         ) : issues === null ? (
           <div className="space-y-2" aria-hidden>
             {[0, 1, 2].map((i) => (
@@ -117,12 +122,14 @@ export function OfficerQueue() {
             ))}
           </div>
         ) : shown.length === 0 ? (
-          <Notice>
-            <Inbox className="mx-auto mb-2 size-6 text-muted" strokeWidth={1.5} />
-            {issues.length === 0
-              ? "No open issues for your authority right now."
-              : "Nothing in this filter."}
-          </Notice>
+          <EmptyState
+            icon={Inbox}
+            title={
+              issues.length === 0
+                ? "No open issues for your authority right now."
+                : "Nothing in this filter."
+            }
+          />
         ) : (
           <ul className="space-y-2">
             {shown.map((issue, i) => (
@@ -138,13 +145,5 @@ export function OfficerQueue() {
         )}
       </div>
     </main>
-  );
-}
-
-function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-md border border-dashed border-hairline px-4 py-10 text-center text-[14px] text-muted">
-      {children}
-    </div>
   );
 }

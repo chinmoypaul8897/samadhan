@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import {
   GROUP_ICON,
   GROUP_LABEL,
@@ -37,9 +39,9 @@ export function CategoryGrid() {
 
   if (status === "loading") return <SkeletonGrid />;
   if (status === "error")
-    return <Notice>Couldn’t load categories — check your connection.</Notice>;
+    return <ErrorState title="Couldn’t load categories" hint="Check your connection and try again." />;
   if (status === "empty")
-    return <Notice>Categories appear once the catalogue is seeded.</Notice>;
+    return <EmptyState title="Categories appear once the catalogue is seeded." />;
 
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -76,13 +78,5 @@ function SkeletonGrid() {
         />
       ))}
     </ul>
-  );
-}
-
-function Notice({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-md border border-dashed border-hairline px-4 py-8 text-center text-[14px] text-muted">
-      {children}
-    </div>
   );
 }
