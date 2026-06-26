@@ -9,6 +9,7 @@ import {
   RefreshCw,
   TriangleAlert,
   ArrowLeft,
+  Languages,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -30,7 +31,7 @@ type LocState =
 // fallback (C12) so a citizen without GPS can still report by dropping a pin on the map.
 export function CaptureFlow() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -92,6 +93,7 @@ export function CaptureFlow() {
         accuracyM: loc.loc.accuracyM,
         rawText: note,
         voiceBlob,
+        languagePref: profile?.languagePref,
         onProgress: setProgress,
       });
       router.push(`/report/${id}`);
@@ -177,6 +179,13 @@ export function CaptureFlow() {
           </label>
 
           <VoiceRecorder onChange={setVoiceBlob} disabled={submitting} />
+
+          {profile?.languagePref === "hi" ? (
+            <p className="flex items-center gap-2 rounded-sm bg-wash-blue px-3 py-2.5 text-[13px] text-ink">
+              <Languages className="size-4 shrink-0 text-link" strokeWidth={1.5} />
+              आपकी शिकायत हिन्दी में दर्ज की जाएगी · Your complaint will be filed in Hindi.
+            </p>
+          ) : null}
 
           {submitError ? (
             <p className="flex items-start gap-2 rounded-sm bg-danger/5 px-3 py-2 text-[13px] text-danger">

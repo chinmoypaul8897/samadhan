@@ -143,6 +143,7 @@ The unit the **intake pipeline** runs on (Capture→Perceive→Locate→Dedup→
 | `media` | Media→§7 | ✓ | the photo |
 | `voiceNote` | VoiceNote→§7 ? |  | optional voice note |
 | `rawText` | string? |  | any typed description |
+| `languagePref` | enum→§9 ? |  | reporter's chosen complaint language at capture (`en`\|`hi`); Act files the complaint in it (overrides detected language when `hi`) [T2] |
 | `location` | GeoPoint | ✓ | device GPS at capture |
 | `geohash` | string | ✓ | 10-char |
 | `accuracyM` | number? |  | GPS accuracy |
