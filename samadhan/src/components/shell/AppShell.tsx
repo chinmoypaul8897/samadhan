@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfficerShell } from "@/components/officer/OfficerShell";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <>
       {!fullFocus && <TopBar />}
       <div className="flex flex-1 flex-col">{children}</div>
+      {!fullFocus && <InstallPrompt />}
       {!fullFocus && <BottomNav />}
     </>
   );

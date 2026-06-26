@@ -55,7 +55,7 @@ export function ConsentSheet({
           <button
             type="button"
             onClick={onClose}
-            className="-mr-1 -mt-1 rounded-full p-1.5 text-muted transition hover:bg-stone hover:text-ink"
+            className="-mr-2 -mt-2 grid size-11 shrink-0 place-items-center rounded-full text-muted transition hover:bg-stone hover:text-ink"
             aria-label="Close"
           >
             <X className="size-4" strokeWidth={1.5} />

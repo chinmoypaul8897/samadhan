@@ -40,6 +40,16 @@
   color-scheme: light;
 }
 
+/*
+  a11y (C12): a visible keyboard focus ring on every interactive element (frontend-plan §E,
+  focus-blue #4c6ee6). Applies to icon buttons, nav links, chips, inputs — anything focusable.
+  Components that draw their own ring (e.g. Button) set focus-visible:outline-none and opt out.
+*/
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);

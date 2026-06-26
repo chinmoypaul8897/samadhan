@@ -27,7 +27,7 @@ export function TopBar() {
           <button
             type="button"
             aria-label="Notifications"
-            className="grid size-9 place-items-center rounded-full text-muted transition hover:bg-stone hover:text-ink"
+            className="grid size-11 place-items-center rounded-full text-muted transition hover:bg-stone hover:text-ink"
           >
             <Bell className="size-5" strokeWidth={1.5} />
           </button>
@@ -38,7 +38,7 @@ export function TopBar() {
               aria-label="Profile"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="grid size-9 place-items-center rounded-full text-muted transition hover:bg-stone hover:text-ink"
+              className="grid size-11 place-items-center rounded-full text-muted transition hover:bg-stone hover:text-ink"
             >
               <UserIcon className="size-5" strokeWidth={1.5} />
             </button>

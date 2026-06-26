@@ -88,7 +88,7 @@ export function OfficerQueue() {
               type="button"
               onClick={() => setFilter(f.key)}
               className={cn(
-                "rounded-xl border px-3 py-1.5 text-[13px] font-medium transition",
+                "inline-flex min-h-11 items-center rounded-xl border px-3.5 text-[13px] font-medium transition",
                 filter === f.key
                   ? "border-primary bg-primary text-on-dark"
                   : "border-hairline text-ink hover:bg-stone",
@@ -101,8 +101,8 @@ export function OfficerQueue() {
         <button
           type="button"
           onClick={() => void load()}
-          aria-label="Refresh"
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[13px] text-muted transition hover:bg-stone hover:text-ink"
+          aria-label="Refresh queue"
+          className="grid size-11 shrink-0 place-items-center rounded-full text-muted transition hover:bg-stone hover:text-ink"
         >
           <RefreshCw className={cn("size-4", refreshing && "animate-spin")} strokeWidth={1.5} />
         </button>
