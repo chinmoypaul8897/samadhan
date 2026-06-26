@@ -16,7 +16,9 @@ type IssueData = {
   serviceCode?: string;
   trackingId?: string;
   title?: string;
+  ward?: string | null;
   location?: { latitude: number; longitude: number };
+  createdAt?: { toMillis(): number };
 };
 
 export async function GET() {
@@ -37,6 +39,8 @@ export async function GET() {
           serviceCode: d.serviceCode ?? "other",
           trackingId: d.trackingId ?? "",
           title: d.title ?? "",
+          ward: d.ward ?? null,
+          createdAtMs: d.createdAt?.toMillis?.() ?? null,
         };
       })
       .filter(Boolean);

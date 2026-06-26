@@ -6,12 +6,14 @@ import { DarkFeatureBand } from "@/components/ui/DarkFeatureBand";
 import { StatCard } from "@/components/ui/StatCard";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MapHeatmap } from "@/components/dashboard/MapHeatmap";
+import { RecentlyResolved, type ResolvedItem } from "@/components/dashboard/RecentlyResolved";
 import { useCountUp } from "@/lib/useCountUp";
 import { buttonClasses } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
-// Public impact dashboard (frontend-plan §D C11, the "Learn" surface). Honest headline metrics
-// (resolution rate + median time-to-resolve — never raw report counts) over a hotspot map.
+// Public impact dashboard (frontend-plan §D C11/C12, the "Learn" surface). Honest headline
+// metrics (resolution rate + median time-to-resolve — never raw report counts) over a hotspot
+// map, with category/time/ward filters and a recently-resolved before/after proof strip.
 type Stats = {
   total: number;
   resolvedCount: number;
@@ -22,8 +24,17 @@ type Stats = {
   citizensHelped: number;
   byStatus: Record<string, number>;
   byGroup: Record<string, number>;
+  recentlyResolved: ResolvedItem[];
 };
-type GeoP = { lat: number; lng: number; severity: string; group: string; status: string };
+type GeoP = {
+  lat: number;
+  lng: number;
+  severity: string;
+  group: string;
+  status: string;
+  ward: string | null;
+  createdAtMs: number | null;
+};
 
 const GROUPS = [
   { key: "all", label: "All" },
@@ -33,6 +44,13 @@ const GROUPS = [
   { key: "electricity", label: "Power" },
 ];
 
+const DAY_MS = 86_400_000;
+const RANGES = [
+  { key: "all", label: "All time", ms: Infinity },
+  { key: "30d", label: "30 days", ms: 30 * DAY_MS },
+  { key: "7d", label: "7 days", ms: 7 * DAY_MS },
+];
+
 const pct = (n: number) => `${Math.round(n)}%`;
 
 export function Dashboard() {
@@ -40,6 +58,9 @@ export function Dashboard() {
   const [points, setPoints] = useState<GeoP[] | null>(null);
   const [error, setError] = useState(false);
   const [group, setGroup] = useState("all");
+  const [range, setRange] = useState("all");
+  const [ward, setWard] = useState("all");
+  const [now] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     setError(false);
@@ -60,9 +81,23 @@ export function Dashboard() {
     void load();
   }, [load]);
 
+  // Wards that actually appear in the data (so the filter never offers an empty bucket).
+  const wards = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of points ?? []) if (p.ward) set.add(p.ward);
+    return [...set].sort();
+  }, [points]);
+
+  const rangeMs = RANGES.find((r) => r.key === range)?.ms ?? Infinity;
   const shownPoints = useMemo(
-    () => (points ?? []).filter((p) => group === "all" || p.group === group),
-    [points, group],
+    () =>
+      (points ?? []).filter(
+        (p) =>
+          (group === "all" || p.group === group) &&
+          (ward === "all" || p.ward === ward) &&
+          (rangeMs === Infinity || (p.createdAtMs != null && p.createdAtMs >= now - rangeMs)),
+      ),
+    [points, group, ward, rangeMs, now],
   );
 
   const rate = stats ? Math.round(stats.resolutionRate * 100) : 0;
@@ -100,31 +135,29 @@ export function Dashboard() {
         />
       ) : (
         <>
-          {/* Hotspot map + category filter */}
+          {/* Hotspot map + filters (category · time range · ward) */}
           <section className="mt-6">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">
-                Where issues cluster
-              </h2>
-              <div className="flex flex-wrap gap-1.5">
-                {GROUPS.map((g) => (
-                  <button
-                    key={g.key}
-                    type="button"
-                    onClick={() => setGroup(g.key)}
-                    className={cn(
-                      "rounded-xl border px-2.5 py-1 text-[12px] font-medium transition",
-                      group === g.key
-                        ? "border-primary bg-primary text-on-dark"
-                        : "border-hairline text-ink hover:bg-stone",
-                    )}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">
+              Where issues cluster
+            </h2>
+            <div className="mt-3 space-y-2">
+              <ChipRow label="Category" options={GROUPS} value={group} onSelect={setGroup} />
+              <ChipRow label="When" options={RANGES} value={range} onSelect={setRange} />
+              {wards.length > 1 ? (
+                <ChipRow
+                  label="Ward"
+                  options={[
+                    { key: "all", label: "All wards" },
+                    ...wards.map((w) => ({ key: w, label: w })),
+                  ]}
+                  value={ward}
+                  onSelect={setWard}
+                />
+              ) : null}
             </div>
-            <MapHeatmap points={shownPoints} />
+            <div className="mt-3">
+              <MapHeatmap points={shownPoints} />
+            </div>
           </section>
 
           {/* Honest stat grid */}
@@ -149,11 +182,50 @@ export function Dashboard() {
             <StatCard value={stats?.breachedCount ?? 0} label="Now overdue" sublabel="agent escalating" delayMs={300} />
           </section>
 
-          <p className="mt-6 text-center text-[12px] text-muted">
+          {/* Recently-resolved before/after proof */}
+          <RecentlyResolved items={stats?.recentlyResolved ?? []} />
+
+          <p className="mt-8 text-center text-[12px] text-muted">
             Live figures from Samadhan — an autonomous civic resolution agent. From report to resolution.
           </p>
         </>
       )}
     </main>
+  );
+}
+
+function ChipRow({
+  label,
+  options,
+  value,
+  onSelect,
+}: {
+  label: string;
+  options: { key: string; label: string }[];
+  value: string;
+  onSelect: (key: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.28px] text-muted">
+        {label}
+      </span>
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => onSelect(o.key)}
+          aria-pressed={value === o.key}
+          className={cn(
+            "inline-flex min-h-11 items-center rounded-xl border px-3 text-[12px] font-medium transition",
+            value === o.key
+              ? "border-primary bg-primary text-on-dark"
+              : "border-hairline text-ink hover:bg-stone",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }

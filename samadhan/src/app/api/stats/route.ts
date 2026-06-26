@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/firebase-admin";
+import { getDb, getBucket } from "@/lib/firebase-admin";
 import { computeSlaState } from "@/lib/sla";
 
 export const runtime = "nodejs";
@@ -16,11 +16,31 @@ type IssueData = {
   status?: string;
   group?: string;
   supporterCount?: number;
+  trackingId?: string;
+  title?: string;
+  beforeMedia?: { downloadUrl?: string };
+  verification?: { afterMediaPath?: string | null };
   createdAt?: { toMillis(): number };
   verifiedAt?: { toMillis(): number } | null;
   resolvedAt?: { toMillis(): number } | null;
   sla?: { slaHours?: number; deadline?: { toMillis(): number } };
 };
+
+type ResolvedItem = {
+  trackingId: string;
+  title: string;
+  group: string;
+  beforeUrl: string;
+  afterUrl: string;
+  resolveHours: number;
+  verifiedMs: number;
+};
+
+// Token-free public download URL for an issues/** Storage path (mirrors lib/storage.ts
+// publicStorageUrl, server-side — issues/** read is public). Used for the after-photo proof.
+function publicUrl(bucketName: string, path: string): string {
+  return `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(path)}?alt=media`;
+}
 
 function median(xs: number[]): number | null {
   if (xs.length === 0) return null;
@@ -42,10 +62,12 @@ export async function GET() {
     const db = getDb();
     const snap = await db.collection("issues").limit(SCAN_LIMIT).get();
     const now = Date.now();
+    const bucketName = getBucket().name;
 
     const byStatus: Record<string, number> = {};
     const byGroup: Record<string, number> = {};
     const resolveHours: number[] = [];
+    const resolvedItems: ResolvedItem[] = [];
     let total = 0;
     let resolvedCount = 0; // verified_resolved
     let citizensHelped = 0;
@@ -66,7 +88,22 @@ export async function GET() {
       if (status === "verified_resolved") {
         resolvedCount++;
         if (createdMs != null && verifiedMs != null && verifiedMs > createdMs) {
-          resolveHours.push((verifiedMs - createdMs) / 3600_000);
+          const hrs = (verifiedMs - createdMs) / 3600_000;
+          resolveHours.push(hrs);
+          // Recently-resolved proof needs both the before photo and the after proof.
+          const beforeUrl = d.beforeMedia?.downloadUrl;
+          const afterPath = d.verification?.afterMediaPath;
+          if (beforeUrl && afterPath) {
+            resolvedItems.push({
+              trackingId: d.trackingId ?? "",
+              title: d.title ?? "",
+              group: d.group ?? "other",
+              beforeUrl,
+              afterUrl: publicUrl(bucketName, afterPath),
+              resolveHours: Math.round(hrs),
+              verifiedMs,
+            });
+          }
         }
       }
 
@@ -82,6 +119,19 @@ export async function GET() {
       }
     }
 
+    // Newest verified fixes first, lean DTO (drop the internal sort key).
+    const recentlyResolved = resolvedItems
+      .sort((a, b) => b.verifiedMs - a.verifiedMs)
+      .slice(0, 6)
+      .map((r) => ({
+        trackingId: r.trackingId,
+        title: r.title,
+        group: r.group,
+        beforeUrl: r.beforeUrl,
+        afterUrl: r.afterUrl,
+        resolveHours: r.resolveHours,
+      }));
+
     return Response.json({
       ok: true,
       total,
@@ -93,6 +143,7 @@ export async function GET() {
       citizensHelped,
       byStatus,
       byGroup,
+      recentlyResolved,
     });
   } catch (err) {
     console.error("[stats] failed", err);
