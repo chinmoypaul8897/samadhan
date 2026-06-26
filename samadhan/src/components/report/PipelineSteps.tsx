@@ -37,7 +37,8 @@ const ICON: Record<StepStatus, LucideIcon> = {
 export function PipelineSteps({ steps }: { steps: StepTrace[] }) {
   return (
     <div className="rounded-sm bg-primary p-1.5">
-      <ol>
+      <ol aria-live="polite" aria-label="Agent progress">
+
         {steps.map((s, i) => {
           const Icon = ICON[s.status] ?? Circle;
           return (
