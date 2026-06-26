@@ -33,6 +33,20 @@ export const DedupVerdict = z.object({
 
 export type DedupVerdict = z.infer<typeof DedupVerdict>;
 
+// Verify → issue.verification.aiVerdict (data-shapes §8.6). Gemini compares the originally
+// reported photo with the officer's "after" proof and judges (a) whether the problem is
+// actually resolved and (b) whether the after photo is plausibly the SAME location/scene.
+// `sameLocation` is the honest stand-in for gpsMatch (EXIF is stripped by the client
+// downscale; the officer portal is simulated). Flat object, no z.union.
+export const VerifyVerdict = z.object({
+  resolved: z.boolean(),
+  confidence: z.number(),
+  sameLocation: z.boolean(),
+  reasoning: z.string(),
+});
+
+export type VerifyVerdict = z.infer<typeof VerifyVerdict>;
+
 // Route → issue.routing (data-shapes §8.3). NOT a Gemini output — routing is a
 // deterministic rules lookup (serviceCode → defaultAuthorityType → the single authority
 // of that type in the city). This schema is the persisted/typed mirror, built in code.

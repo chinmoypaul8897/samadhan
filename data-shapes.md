@@ -340,6 +340,8 @@ Verification {
 ```
 Rule: `status='verified_resolved'` only when `citizenConfirmed===true` **or** `outcome==='auto'`. AI verdict alone never finalises (CLAUDE.md anti-pattern: no one-click resolved).
 
+> **C9 derivation note.** `aiVerdict` is computed when the officer resolves: Gemini compares before vs after → `{resolved, confidence, reasoning}`. `gpsMatch` is the agent's **visual same-location** judgment (Gemini `sameLocation`), NOT device GPS — the client downscale (canvas re-encode) strips EXIF, and the officer portal is simulated (the officer isn't physically at the issue, so device GPS would false-flag every legitimate resolve). `timestampMatch` = the after photo was provided after the report (`resolvedAt > createdAt`). Both are advisory; only the citizen confirm (or `outcome:'auto'`) finalises.
+
 ---
 
 ## 9. Enums & state machines
