@@ -14,6 +14,9 @@ import {
   signInAnonymously,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  linkWithPhoneNumber,
+  type ConfirmationResult,
+  type RecaptchaVerifier,
   type User,
 } from "firebase/auth";
 import {
@@ -35,6 +38,7 @@ export type CitizenProfile = {
   role: "citizen" | "officer" | "admin";
   displayName: string;
   isAnonymous: boolean;
+  phone?: string | null;
   languagePref: LanguagePref;
   fcmTokens: string[];
   authorityId?: string | null;
@@ -48,6 +52,8 @@ type AuthState = {
   loading: boolean;
   setLanguage: (lang: LanguagePref) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
+  startPhoneUpgrade: (phone: string, verifier: RecaptchaVerifier) => Promise<ConfirmationResult>;
+  confirmPhoneOtp: (confirmation: ConfirmationResult, code: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -85,6 +91,7 @@ async function ensureUserDoc(user: User): Promise<CitizenProfile> {
     role: (data.role as CitizenProfile["role"]) ?? "citizen",
     displayName: (data.displayName as string) ?? "Anonymous Citizen",
     isAnonymous: (data.isAnonymous as boolean) ?? user.isAnonymous,
+    phone: (data.phone as string | undefined) ?? null,
     languagePref: (data.languagePref as LanguagePref) ?? "en",
     fcmTokens: (data.fcmTokens as string[]) ?? [],
     authorityId: (data.authorityId as string | undefined) ?? null,
@@ -146,6 +153,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithEmailAndPassword(getClientAuth(), email.trim(), password);
   }, []);
 
+  // Phone-OTP anonymous-upgrade (C13). linkWithPhoneNumber links the phone credential to the
+  // CURRENT anonymous user (same uid, no new account) → returns a ConfirmationResult; confirming
+  // the OTP completes the upgrade. We then persist phone + isAnonymous:false + a seed trustScore
+  // to users/{uid} (the rule allows non-role field updates) and reflect it in the local profile.
+  const startPhoneUpgrade = useCallback(
+    async (phone: string, verifier: RecaptchaVerifier): Promise<ConfirmationResult> => {
+      const u = getClientAuth().currentUser;
+      if (!u) throw new Error("NOT_SIGNED_IN");
+      return linkWithPhoneNumber(u, phone, verifier);
+    },
+    [],
+  );
+
+  const confirmPhoneOtp = useCallback(
+    async (confirmation: ConfirmationResult, code: string): Promise<void> => {
+      const cred = await confirmation.confirm(code);
+      const u = cred.user;
+      const phone = u.phoneNumber ?? null;
+      await updateDoc(doc(db, "users", u.uid), {
+        phone,
+        isAnonymous: false,
+        trustScore: 50,
+        updatedAt: serverTimestamp(),
+      });
+      setProfile((p) => (p ? { ...p, isAnonymous: false, phone } : p));
+    },
+    [],
+  );
+
   // Sign out → onAuthStateChanged fires null → the effect silently re-signs-in anonymously
   // (back to a citizen session).
   const signOut = useCallback(async () => {
@@ -153,8 +189,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ user, profile, loading, setLanguage, signInWithEmail, signOut }),
-    [user, profile, loading, setLanguage, signInWithEmail, signOut],
+    () => ({
+      user,
+      profile,
+      loading,
+      setLanguage,
+      signInWithEmail,
+      startPhoneUpgrade,
+      confirmPhoneOtp,
+      signOut,
+    }),
+    [user, profile, loading, setLanguage, signInWithEmail, startPhoneUpgrade, confirmPhoneOtp, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
