@@ -17,6 +17,9 @@ export function NotificationOptIn({ reporterUid }: { reporterUid: string }) {
   const [supported, setSupported] = useState<boolean | null>(null);
   const [perm, setPerm] = useState<NotificationPermission | null>(null);
   const [busy, setBusy] = useState(false);
+  // useAuth().profile.fcmTokens is read once at sign-in and not refreshed in-session, so
+  // right after enabling it's stale ([]). Track success locally so the "on" state shows.
+  const [justEnabled, setJustEnabled] = useState(false);
 
   useEffect(() => {
     notificationsSupported().then(setSupported);
@@ -27,7 +30,7 @@ export function NotificationOptIn({ reporterUid }: { reporterUid: string }) {
   if (!isOwner || supported === null) return null; // not the reporter, or still checking
   if (supported === false) return <Note icon={<BellOff />}>Push notifications aren’t supported on this browser.</Note>;
 
-  const hasToken = (profile?.fcmTokens?.length ?? 0) > 0;
+  const hasToken = (profile?.fcmTokens?.length ?? 0) > 0 || justEnabled;
 
   if (perm === "granted" && hasToken) {
     return (
@@ -47,7 +50,7 @@ export function NotificationOptIn({ reporterUid }: { reporterUid: string }) {
     const res = await enableNotifications(user.uid);
     setBusy(false);
     if (typeof window !== "undefined" && "Notification" in window) setPerm(Notification.permission);
-    if (res.status === "enabled") toast({ title: "Notifications on", body: "We’ll ping you when this issue moves." });
+    if (res.status === "enabled") { setJustEnabled(true); toast({ title: "Notifications on", body: "We’ll ping you when this issue moves." }); }
     else if (res.status === "unsupported") setSupported(false);
     else if (res.status === "no-key") toast({ title: "Not available on this build yet", body: "Push will switch on shortly." });
     else if (res.status === "error") toast({ title: "Couldn’t enable notifications", body: "Please try again." });
