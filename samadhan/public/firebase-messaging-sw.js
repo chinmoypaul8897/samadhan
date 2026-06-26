@@ -1,17 +1,33 @@
 /*
   Samadhan FCM service worker (C7 push). Receives background web-push and renders the
-  notification. Separate from /sw.js (the PWA SW) — FCM requires a file named
-  firebase-messaging-sw.js at the origin root.
+  notification. The firebase web SDK auto-registers THIS file at its dedicated scope
+  '/firebase-cloud-messaging-push-scope' (getToken without serviceWorkerRegistration), so it
+  never collides with the PWA's /sw.js at scope '/'.
 
-  Compat importScripts (NOT modular): Next serves public/ files unbundled, and a modular
-  ES-module service worker needs bundling. Versions pinned to the installed firebase
-  (12.15.0) — bump these URLs if firebase is upgraded. Config is the public NEXT_PUBLIC_*
-  web config (not secret; already shipped in the client bundle).
+  notificationclick is registered FIRST, before importing FCM — the official docs warn FCM
+  may overwrite custom notificationclick behaviour otherwise.
 
-  Single-notification design: the server sends DATA-ONLY messages, so we render exactly one
-  notification here via onBackgroundMessage (a top-level notification payload would also
-  auto-display and double-fire). Foreground messages are handled by onMessage in the app.
+  Compat importScripts (NOT modular): Next serves public/ files unbundled. Versions pinned to
+  the installed firebase (12.15.0). Config = public NEXT_PUBLIC_* web config (not secret).
+  Single-notification design: the server sends DATA-ONLY messages, so onBackgroundMessage
+  renders exactly one notification (a top-level notification payload would auto-display +
+  double-fire on web).
 */
+
+// Open the issue when the notification is tapped (focus an existing tab if one is open).
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const link = (event.notification.data && event.notification.data.link) || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (client.url === link && "focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(link);
+    }),
+  );
+});
+
 importScripts("https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging-compat.js");
 
@@ -26,28 +42,14 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Data-only messages → render exactly one notification here.
 messaging.onBackgroundMessage((payload) => {
   const d = payload.data || {};
-  const title = d.title || "Samadhan";
-  self.registration.showNotification(title, {
+  self.registration.showNotification(d.title || "Samadhan", {
     body: d.body || "",
     icon: d.icon || "/icon-192.png",
     badge: "/icon-192.png",
     tag: d.issueId || undefined, // collapse repeated updates for the same issue
     data: { link: d.link || "/" },
   });
-});
-
-// Open the issue when the notification is tapped (focus an existing tab if one is open).
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const link = (event.notification.data && event.notification.data.link) || "/";
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if (client.url === link && "focus" in client) return client.focus();
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(link);
-    }),
-  );
 });

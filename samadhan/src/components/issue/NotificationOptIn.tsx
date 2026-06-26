@@ -22,9 +22,25 @@ export function NotificationOptIn({ reporterUid }: { reporterUid: string }) {
   const [justEnabled, setJustEnabled] = useState(false);
 
   useEffect(() => {
-    notificationsSupported().then(setSupported);
-    if (typeof window !== "undefined" && "Notification" in window) setPerm(Notification.permission);
-  }, []);
+    let cancelled = false;
+    (async () => {
+      const sup = await notificationsSupported();
+      if (cancelled) return;
+      setSupported(sup);
+      const p = typeof window !== "undefined" && "Notification" in window ? Notification.permission : null;
+      setPerm(p);
+      // Self-heal: if permission is already granted, silently re-mint the token under the
+      // corrected SW scope (returning users whose token was bound to the old broken
+      // root-scope subscription). requestPermission() is a no-op when already granted.
+      if (sup && p === "granted" && user) {
+        const res = await enableNotifications(user.uid);
+        if (!cancelled && res.status === "enabled") setJustEnabled(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const isOwner = !!user && user.uid === reporterUid;
   if (!isOwner || supported === null) return null; // not the reporter, or still checking

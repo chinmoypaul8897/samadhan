@@ -19,7 +19,6 @@ import { db, firebaseApp } from "@/lib/firebase-client";
 // background). Bindings: firebase.google.com/docs/cloud-messaging/js/client + /web/receive-messages.
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-const SW_URL = "/firebase-messaging-sw.js";
 
 export type EnableResult =
   | { status: "enabled"; token: string }
@@ -50,13 +49,6 @@ export async function notificationsSupported(): Promise<boolean> {
   }
 }
 
-async function registerSw(): Promise<ServiceWorkerRegistration | undefined> {
-  if (!("serviceWorker" in navigator)) return undefined;
-  // Explicit registration (and passed to getToken) so the FCM SW doesn't fight /sw.js for
-  // the root scope.
-  return navigator.serviceWorker.register(SW_URL);
-}
-
 /** Request permission, mint an FCM token, and store it on the user's own doc. */
 export async function enableNotifications(uid: string): Promise<EnableResult> {
   try {
@@ -67,8 +59,12 @@ export async function enableNotifications(uid: string): Promise<EnableResult> {
     const perm = await Notification.requestPermission();
     if (perm !== "granted") return { status: "denied" };
 
-    const serviceWorkerRegistration = await registerSw();
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration });
+    // Do NOT pass serviceWorkerRegistration: the SDK auto-registers firebase-messaging-sw.js
+    // at its DEDICATED scope '/firebase-cloud-messaging-push-scope', which cannot collide with
+    // the PWA's /sw.js at scope '/'. Registering it at '/' ourselves made /sw.js (no push
+    // handler) steal the subscription on reload → pushes silently dropped (firebase-js-sdk
+    // registerDefaultSw + W3C SW scope rules).
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
     if (!token) return { status: "error", message: "no_token" };
 
     await updateDoc(doc(db, "users", uid), {
