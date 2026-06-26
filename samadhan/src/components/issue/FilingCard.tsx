@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileText, CheckCircle2, Loader2 } from "lucide-react";
 import type { Filing, Routing } from "@/lib/issues";
 import { useAuth } from "@/lib/auth-context";
+import { fileComplaint } from "@/lib/citizen-api";
 import { Button } from "@/components/ui/Button";
 import { ConsentSheet } from "@/components/ui/ConsentSheet";
 
@@ -80,15 +81,7 @@ export function FilingCard({
     setBusy(true);
     setErr(null);
     try {
-      const res = await fetch(`/api/issues/${issueId}/file`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: user.uid }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      await fileComplaint(issueId);
       setOpen(false); // onSnapshot flips the card to the submitted state
     } catch (e) {
       setErr((e as Error).message);

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Megaphone, Bell, Scale, Send, CheckCircle2, Info } from "lucide-react";
 import { useEscalations, type Escalation } from "@/lib/issues";
 import { useAuth } from "@/lib/auth-context";
+import { sendEscalation } from "@/lib/citizen-api";
 import { useToast } from "@/components/ui/Toast";
 import { Button } from "@/components/ui/Button";
 import { ConsentSheet } from "@/components/ui/ConsentSheet";
@@ -68,15 +69,7 @@ function EscalationRow({
     setBusy(true);
     setErr(null);
     try {
-      const res = await fetch(`/api/issues/${issueId}/escalations/${esc.id}/send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: user.uid }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      await sendEscalation(issueId, esc.id);
       setOpen(false); // onSnapshot flips the row to the sent state
       toast({ title: "Escalation sent", body: `Your ${meta.label.toLowerCase()} is on its way.` });
     } catch (e) {

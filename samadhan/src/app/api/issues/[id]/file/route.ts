@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { requireCitizen } from "@/lib/claims";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,10 +11,9 @@ export const dynamic = "force-dynamic";
 // Issues are server-only writes in the rules (clients can't flip filing), so this runs via
 // Admin and validates the caller is the issue's reporter.
 //
-// Owner-auth is demo-grade for C6: the client sends its uid and we check it against
-// issue.reporterUid. Real Firebase ID-token verification is deferred to C12 (no
-// verifyIdToken helper exists yet — see progress.md). Anonymous reporters have a stable
-// uid, so the owner match holds.
+// C12: owner-auth is now a real Firebase ID-token check (requireCitizen) — the uid comes
+// from the verified token, NOT the request body, so a crafted POST can't file as another
+// citizen. Anonymous reporters still pass (anon tokens carry a stable uid).
 
 const ACTIVE = new Set([
   "submitted",
@@ -27,18 +27,12 @@ const ACTIVE = new Set([
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let body: { uid?: string } = {};
-  try {
-    body = (await req.json()) as { uid?: string };
-  } catch {
-    // empty/invalid body → uid stays undefined → FORBIDDEN below
-  }
-  const uid = body.uid;
-
   const db = getDb();
   const issueRef = db.collection("issues").doc(id);
 
   try {
+    const { uid } = await requireCitizen(req);
+
     const result = await db.runTransaction(async (tx) => {
       const snap = await tx.get(issueRef);
       if (!snap.exists) throw new Error("NOT_FOUND");
@@ -49,7 +43,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         filing?: { status?: string };
       };
 
-      if (!uid || uid !== issue.reporterUid) throw new Error("FORBIDDEN");
+      if (uid !== issue.reporterUid) throw new Error("FORBIDDEN");
       if (!issue.status || !ACTIVE.has(issue.status)) throw new Error("ISSUE_CLOSED");
 
       const fstatus = issue.filing?.status;
@@ -76,7 +70,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   } catch (err) {
     const msg = (err as Error).message;
     const status =
-      msg === "NOT_FOUND" ? 404 : msg === "FORBIDDEN" ? 403 : msg === "ISSUE_CLOSED" || msg === "NOT_PREPARED" ? 409 : 500;
+      msg === "UNAUTHENTICATED"
+        ? 401
+        : msg === "NOT_FOUND"
+          ? 404
+          : msg === "FORBIDDEN"
+            ? 403
+            : msg === "ISSUE_CLOSED" || msg === "NOT_PREPARED"
+              ? 409
+              : 500;
     if (status === 500) console.error("[file] failed", err);
     return Response.json({ ok: false, error: msg }, { status });
   }

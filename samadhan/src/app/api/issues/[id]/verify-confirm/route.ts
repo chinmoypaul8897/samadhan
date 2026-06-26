@@ -2,6 +2,7 @@ import { getDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { transition, type IssueStatus } from "@/lib/status";
 import { notifyUser, issueLink } from "@/lib/notify";
+import { requireCitizen } from "@/lib/claims";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,22 +13,23 @@ export const dynamic = "force-dynamic";
 // officer is notified either way. Runs via Admin (issues are server-only writes) and goes
 // through transition() so the §9 graph + status_change activity + reporter push are consistent.
 //
-// Owner-auth is demo-grade (uid from the body checked against issue.reporterUid, like /file) —
-// real ID-token verification is the C12 retrofit using the C8 requireOfficer pattern.
+// C12: owner-auth is a real Firebase ID-token check (requireCitizen) — the uid comes from the
+// verified token, never the body. `confirmed` is still a body field (validated boolean).
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let body: { confirmed?: boolean; uid?: string } = {};
+  let body: { confirmed?: boolean } = {};
   try {
     body = (await req.json()) as typeof body;
   } catch {
     // empty/invalid body → BAD_REQUEST below
   }
-  const { confirmed, uid } = body;
+  const { confirmed } = body;
 
   try {
-    if (typeof confirmed !== "boolean" || !uid) throw new Error("BAD_REQUEST");
+    const { uid } = await requireCitizen(req);
+    if (typeof confirmed !== "boolean") throw new Error("BAD_REQUEST");
 
     const db = getDb();
     const snap = await db.collection("issues").doc(id).get();
@@ -81,13 +83,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const status =
       msg === "BAD_REQUEST"
         ? 400
-        : msg === "FORBIDDEN"
-          ? 403
-          : msg === "NOT_FOUND"
-            ? 404
-            : msg === "ILLEGAL_TRANSITION" || msg === "STALE_STATUS"
-              ? 409
-              : 500;
+        : msg === "UNAUTHENTICATED"
+          ? 401
+          : msg === "FORBIDDEN"
+            ? 403
+            : msg === "NOT_FOUND"
+              ? 404
+              : msg === "ILLEGAL_TRANSITION" || msg === "STALE_STATUS"
+                ? 409
+                : 500;
     if (status === 500) console.error("[verify-confirm] failed", err);
     return Response.json({ ok: false, error: msg }, { status });
   }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sparkles, Loader2, CheckCircle2, AlertTriangle, MapPin, Clock, Check, X } from "lucide-react";
 import type { IssueDoc } from "@/lib/issues";
 import { useAuth } from "@/lib/auth-context";
+import { confirmVerification } from "@/lib/citizen-api";
 import { publicStorageUrl } from "@/lib/storage";
 import { useToast } from "@/components/ui/Toast";
 import { Button } from "@/components/ui/Button";
@@ -64,15 +65,7 @@ export function VerifyCard({ issue }: { issue: IssueDoc }) {
     setBusy(confirmed ? "confirm" : "deny");
     setErr(null);
     try {
-      const res = await fetch(`/api/issues/${issue.id}/verify-confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmed, uid: user.uid }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      await confirmVerification(issue.id, confirmed);
       // onSnapshot flips the card (→ celebration, or the issue returns to in-progress).
       toast(
         confirmed

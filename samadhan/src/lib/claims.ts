@@ -9,8 +9,9 @@ import { getAdminAuth } from "@/lib/firebase-admin";
 // This is stricter than C7's demo-grade `/api/internal/transition` (which trusted a uid in
 // the body) — the officer portal performs privileged writes (resolve, proof-of-fix), and the
 // Storage after-photo rule already requires `request.auth.token.role`, so the officer must be
-// a real signed-in account regardless. The citizen endpoints (file / verify-confirm) get the
-// same treatment in C12.
+// a real signed-in account regardless. C12 brings the same real verification to the citizen
+// endpoints (file / verify-confirm / escalations send) via `requireCitizen` below, and gates
+// `/api/internal/transition` with `requireOfficer`.
 //
 // Bindings: firebase.google.com/docs/auth/admin/verify-id-tokens + /docs/auth/admin/custom-claims.
 
@@ -56,6 +57,24 @@ export async function requireOfficer(req: Request): Promise<Officer> {
     authorityId: (decoded.authorityId as string | undefined) ?? null,
     jurisdictionWards: (decoded.jurisdictionWards as string[] | undefined) ?? [],
   };
+}
+
+/**
+ * Verify the caller is *any* signed-in user (citizen, incl. anonymous — anonymous Firebase
+ * accounts still mint a valid ID token carrying a stable uid). No role/claim requirement.
+ * Returns the verified uid; callers compare it to the resource owner (e.g. issue.reporterUid).
+ * Throws `UNAUTHENTICATED` (no/invalid token). This is the C12 replacement for trusting a
+ * `uid` in the request body on the citizen one-tap endpoints.
+ */
+export async function requireCitizen(req: Request): Promise<{ uid: string }> {
+  const token = bearer(req);
+  if (!token) throw new Error("UNAUTHENTICATED");
+  try {
+    const decoded = await getAdminAuth().verifyIdToken(token);
+    return { uid: decoded.uid };
+  } catch {
+    throw new Error("UNAUTHENTICATED");
+  }
 }
 
 /**
