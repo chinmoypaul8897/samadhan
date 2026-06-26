@@ -2,15 +2,16 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Users } from "lucide-react";
+import { ArrowLeft, MapPin, Users, Sparkles, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { useIssue, useActivity } from "@/lib/issues";
+import { useIssue, useActivity, type AiVerdict } from "@/lib/issues";
 import { publicStorageUrl } from "@/lib/storage";
 import { SlaClock } from "@/components/issue/SlaClock";
 import { StatusChip } from "@/components/issue/StatusChip";
 import { StaticMap } from "@/components/issue/StaticMap";
 import { Timeline } from "@/components/issue/Timeline";
 import { AuthorityCard } from "@/components/issue/AuthorityCard";
+import { BeforeAfter } from "@/components/issue/BeforeAfter";
 import { OfficerActionBar } from "@/components/officer/OfficerActionBar";
 import { OfficerLogin } from "@/components/officer/OfficerLogin";
 import { cn } from "@/lib/cn";
@@ -78,25 +79,15 @@ export default function OfficerIssuePage({ params }: { params: Promise<{ id: str
             </div>
           </header>
 
-          {/* before / after */}
-          <div className={cn("grid gap-3", afterUrl ? "grid-cols-2" : "grid-cols-1")}>
-            <figure className="overflow-hidden rounded-lg border border-hairline bg-stone">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={issue.beforeMedia.downloadUrl} alt="Reported" className="aspect-[4/3] w-full object-cover" />
-              <figcaption className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.28px] text-muted">
-                Reported
-              </figcaption>
-            </figure>
-            {afterUrl ? (
-              <figure className="overflow-hidden rounded-lg border border-brand/20 bg-stone">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={afterUrl} alt="Proof of fix" className="aspect-[4/3] w-full object-cover" />
-                <figcaption className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.28px] text-brand">
-                  Proof of fix
-                </figcaption>
-              </figure>
-            ) : null}
-          </div>
+          <BeforeAfter
+            beforeUrl={issue.beforeMedia.downloadUrl}
+            afterUrl={afterUrl}
+            afterLabel="Proof of fix"
+            highlightAfter
+          />
+
+          {/* Agent's read of the officer's proof (read-only; the citizen is the finaliser). */}
+          {issue.verification?.aiVerdict ? <AgentVerdict verdict={issue.verification.aiVerdict} /> : null}
 
           {issue.description ? (
             <p className="text-[15px] leading-relaxed text-ink/85">{issue.description}</p>
@@ -149,6 +140,41 @@ function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-10 rounded-md border border-dashed border-hairline px-4 py-8 text-center text-[14px] text-muted">
       {children}
+    </div>
+  );
+}
+
+// The agent's before/after verdict on the officer's proof (read-only here — the citizen
+// confirms). Same read as the citizen VerifyCard, condensed.
+function AgentVerdict({ verdict }: { verdict: AiVerdict }) {
+  const positive = verdict.resolved && verdict.confidence >= 0.6 && verdict.gpsMatch;
+  return (
+    <div
+      className={cn(
+        "rounded-md border p-3.5",
+        positive ? "border-brand/20 bg-wash-green" : "border-accent/30 bg-accent/5",
+      )}
+    >
+      <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.28px] text-muted">
+        <Sparkles className="size-3.5" strokeWidth={1.75} /> Agent verified your proof
+      </div>
+      <p className={cn("mt-1.5 text-[14px] font-medium", positive ? "text-brand" : "text-accent")}>
+        {positive ? (
+          <>
+            <CheckCircle2 className="mr-1 inline size-4 -translate-y-px" strokeWidth={1.75} /> Looks
+            resolved
+          </>
+        ) : (
+          <>
+            <AlertTriangle className="mr-1 inline size-4 -translate-y-px" strokeWidth={1.75} /> Citizen
+            should review
+          </>
+        )}
+        <span className="ml-2 font-mono text-[12px] font-normal text-muted">
+          {Math.round(verdict.confidence * 100)}% sure
+        </span>
+      </p>
+      <p className="mt-1 text-[13px] leading-relaxed text-ink/75">{verdict.reasoning}</p>
     </div>
   );
 }

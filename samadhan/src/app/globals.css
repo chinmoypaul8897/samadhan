@@ -88,12 +88,23 @@ body {
   animation: sheet-up 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
+/* Motion: verified-resolved — the deep-green check blooms in (frontend-plan §A.6 `resolveBloom`). */
+@keyframes resolve-bloom {
+  0% { opacity: 0; transform: scale(0.4); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-resolve-bloom {
+  animation: resolve-bloom 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up { animation: none; }
   .animate-pop-in { animation: none; }
   .animate-ring-pulse { animation: none; }
   .animate-scrim-in { animation: none; }
   .animate-sheet-up { animation: none; }
+  .animate-resolve-bloom { animation: none; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
