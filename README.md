@@ -126,6 +126,19 @@ GET /api/open311/requests?format=xml   GeoReport v2 XML
 GET /api/open311/requests?status=open|closed&service_code=<code>
 ```
 
+## Roadmap
+
+Deliberately out of scope for this build, in priority order:
+
+- **Watch your ward** — follow a neighbourhood and get notified of every new issue and resolution in it (SeeClickFix-style area subscription).
+- **Two-way officer ↔ citizen messages** on an issue (clarifying questions, replies) on top of the current one-way timeline.
+- **Pre-submission nearby-issue nudge** — surface existing nearby issues on the capture map before you report (complements the current post-capture AI dedup).
+- **Phone-OTP sign-in** — built and dormant; needs a provisioned reCAPTCHA Enterprise web key to re-enable.
+- **Full UI internationalisation** — the interface is English today; the *complaint* is already filed in the citizen's own language (auto-detected). Vernacular UI strings are next.
+- **WhatsApp intake** and **video reporting** — additional capture channels (need a WhatsApp Business number / video pipeline).
+- **Real government-portal integration** — the officer side is simulated today (no public write-API exists); a real Open311 endpoint integration is the path.
+- **Predictive analytics** — true forecasting of hotspots/recurrence (beyond the current descriptive insights), once there is real usage data.
+
 ## Status
 
 Shipped end-to-end. See `progress.md` for the full build log and `SUBMISSION.md` for the submission write-up.

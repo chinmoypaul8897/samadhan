@@ -3,7 +3,8 @@
 A ~5-minute run-of-show built around the three standout moments. Live app:
 **https://samadhan-554128679437.asia-south1.run.app**
 
-> One-line pitch to open with: *"Everyone else built a way to **report** civic issues. Samadhan is an autonomous agent that gets them **resolved** — it dedupes, files the formal complaint, tracks the SLA, escalates on breach, and verifies the fix. From report to resolution."*
+> **Open with the landscape (≈20s):** *"Bengaluru has had I Change My City since 2012 and the government's Sahaaya app — and a third of reported issues still never resolve, because these are reporting tools: they forward the complaint and leave the citizen to chase it. Samadhan is the resolution layer they're missing — an autonomous agent that drafts the complaint, files it, and when the deadline is missed, escalates to an RTI by itself, then verifies the fix independently. From report to resolution."*
+> *(Naming the incumbents up front shows you know the space — and frames everything that follows as the gap they leave open.)*
 
 **Before you start:** open on a phone (or a narrow browser window — it's a mobile-first PWA). The canonical demo dataset is already seeded, so every screen is populated. Officer login credentials are in `samadhan/scripts/seed-output.local.json` (gitignored); the BBMP officer is `officer.bbmp@samadhan.local`.
 

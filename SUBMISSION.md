@@ -35,6 +35,12 @@ A citizen snaps a photo. From there an **autonomous, multi-step AI agent** takes
 
 The loop actually closes, and "resolved" means something.
 
+### Why this is different from what already exists
+
+Bengaluru is not short of *reporting* tools. Janaagraha's **I Change My City** has run since 2012 and routes complaints to the very same bodies (BBMP, BWSSB, BESCOM); the government's own **Sahaaya / Namma Bengaluru** app covers 20+ departments. Yet roughly a third of reported issues still never resolve — because these are **reporting and routing portals**: they forward the complaint and leave the citizen to chase it, with no help when the deadline lapses. Global platforms (FixMyStreet, SeeClickFix) and standalone AI-RTI tools exist too, but none of them close the loop.
+
+**Samadhan is the resolution-and-accountability layer those tools are missing.** It doesn't just forward a complaint — an autonomous agent *drafts* it, *files* it, and when the SLA is breached it **autonomously escalates to an RTI** without the citizen lifting a finger; then it **independently verifies** the fix with before/after vision and the citizen's confirmation, instead of trusting the authority's "resolved" flag. We don't compete with the reporting apps — we add the layer that turns a report into a resolution. The dataset is exported in the **Open311** standard, so it interoperates with that existing ecosystem rather than replacing it.
+
 ## 3. Key features
 
 - **Frictionless capture** — one tap: photo + auto-GPS, optional voice note (transcribed by Gemini), near-zero typing. Manual map-pin fallback when GPS is denied.
