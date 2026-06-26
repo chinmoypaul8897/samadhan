@@ -153,7 +153,9 @@ export function useIssue(issueId: string) {
   useEffect(() => {
     const unsub = onSnapshot(
       doc(db, "issues", issueId),
-      (snap) => setIssue(snap.exists() ? (snap.data() as IssueDoc) : null),
+      // Always derive `id` from the doc id (not a stored field) so issue.id is reliable
+      // everywhere it's threaded to children (escalations/verify/file endpoints + hooks).
+      (snap) => setIssue(snap.exists() ? ({ ...(snap.data() as IssueDoc), id: snap.id }) : null),
       (err) => {
         console.error("[useIssue]", err);
         setError(true);
@@ -168,6 +170,7 @@ export function useIssue(issueId: string) {
 export function useActivity(issueId: string) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   useEffect(() => {
+    if (!issueId) return; // guard: collection() throws on an undefined path segment
     const q = query(
       collection(db, "issues", issueId, "activity"),
       orderBy("createdAt", "desc"),
@@ -186,6 +189,7 @@ export function useActivity(issueId: string) {
 export function useEscalations(issueId: string) {
   const [items, setItems] = useState<Escalation[]>([]);
   useEffect(() => {
+    if (!issueId) return; // guard: collection() throws on an undefined path segment
     const q = query(
       collection(db, "issues", issueId, "escalations"),
       orderBy("createdAt", "desc"),
