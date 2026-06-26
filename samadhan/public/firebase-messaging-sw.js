@@ -1,33 +1,18 @@
 /*
-  Samadhan FCM service worker (C7 push). Receives background web-push and renders the
-  notification. The firebase web SDK auto-registers THIS file at its dedicated scope
-  '/firebase-cloud-messaging-push-scope' (getToken without serviceWorkerRegistration), so it
-  never collides with the PWA's /sw.js at scope '/'.
+  Samadhan FCM service worker (C7 push). The firebase web SDK auto-registers this file at its
+  dedicated scope '/firebase-cloud-messaging-push-scope' (getToken without
+  serviceWorkerRegistration), so it never collides with the PWA's /sw.js at scope '/'.
 
-  notificationclick is registered FIRST, before importing FCM — the official docs warn FCM
-  may overwrite custom notificationclick behaviour otherwise.
+  MINIMAL by design: importScripts + initializeApp + firebase.messaging(). Calling
+  firebase.messaging() in the SW installs FCM's default push handler, which AUTO-DISPLAYS
+  notification-payload messages in the background and opens webpush.fcmOptions.link on click.
+  We deliberately do NOT register onBackgroundMessage — a handler suppresses that auto-display
+  for notification messages (→ nothing shows), and data-only + a handler proved unreliable for
+  background display on Android Chrome. The server therefore sends a `notification` payload.
 
   Compat importScripts (NOT modular): Next serves public/ files unbundled. Versions pinned to
   the installed firebase (12.15.0). Config = public NEXT_PUBLIC_* web config (not secret).
-  Single-notification design: the server sends DATA-ONLY messages, so onBackgroundMessage
-  renders exactly one notification (a top-level notification payload would auto-display +
-  double-fire on web).
 */
-
-// Open the issue when the notification is tapped (focus an existing tab if one is open).
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const link = (event.notification.data && event.notification.data.link) || "/";
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if (client.url === link && "focus" in client) return client.focus();
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(link);
-    }),
-  );
-});
-
 importScripts("https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.15.0/firebase-messaging-compat.js");
 
@@ -40,16 +25,5 @@ firebase.initializeApp({
   appId: "1:554128679437:web:ebfcdf6c13719d96e2eb44",
 });
 
-const messaging = firebase.messaging();
-
-// Data-only messages → render exactly one notification here.
-messaging.onBackgroundMessage((payload) => {
-  const d = payload.data || {};
-  self.registration.showNotification(d.title || "Samadhan", {
-    body: d.body || "",
-    icon: d.icon || "/icon-192.png",
-    badge: "/icon-192.png",
-    tag: d.issueId || undefined, // collapse repeated updates for the same issue
-    data: { link: d.link || "/" },
-  });
-});
+// Installs FCM's default background push handler (auto-displays notification messages).
+firebase.messaging();

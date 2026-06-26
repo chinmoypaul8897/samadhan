@@ -50,21 +50,18 @@ export async function notifyUser(uid: string, payload: PushPayload): Promise<voi
     const tokens: string[] = ((await userRef.get()).data()?.fcmTokens as string[]) ?? [];
     if (!tokens.length) return;
 
-    // Data-only message (no top-level `notification`): firebase-messaging-sw.js renders
-    // exactly ONE notification from data via onBackgroundMessage. A `notification` payload
-    // here would double-fire (FCM auto-display + the SW's showNotification) on web.
-    const data: Record<string, string> = {
-      ...stringifyData(payload.data),
-      title: payload.title,
-      body: payload.body,
-      icon: "/icon-192.png",
-    };
-    if (payload.link) data.link = payload.link;
+    // Notification payload (NOT data-only): the FCM service-worker SDK auto-displays this in
+    // the background, since firebase-messaging-sw.js registers NO onBackgroundMessage handler
+    // (a handler suppresses auto-display for notification messages → nothing shows; data-only
+    // + a handler proved unreliable for background display on Android Chrome). Foreground
+    // messages still hit onMessage in the app (→ in-app toast). Click target = fcmOptions.link.
     const base = {
-      data,
+      notification: { title: payload.title, body: payload.body },
+      data: stringifyData(payload.data),
       webpush: {
-        fcmOptions: payload.link ? { link: payload.link } : undefined,
         headers: { Urgency: "high" },
+        fcmOptions: payload.link ? { link: payload.link } : undefined,
+        notification: { icon: "/icon-192.png", badge: "/icon-192.png" },
       },
     };
 
