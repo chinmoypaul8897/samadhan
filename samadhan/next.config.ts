@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
     "@genkit-ai/next",
     "@opentelemetry/sdk-node",
     "handlebars",
+    "google-auth-library",
   ],
   async headers() {
     return [
