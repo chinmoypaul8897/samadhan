@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Bell, User as UserIcon } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { LanguageToggle } from "./LanguageToggle";
 
@@ -26,13 +26,6 @@ export function TopBar() {
 
         <div className="flex items-center gap-1.5">
           <LanguageToggle />
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="grid size-11 place-items-center rounded-full text-muted transition hover:bg-stone hover:text-ink"
-          >
-            <Bell className="size-5" strokeWidth={1.5} />
-          </button>
 
           <div className="relative">
             <button
