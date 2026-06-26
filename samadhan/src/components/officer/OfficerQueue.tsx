@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Inbox, RefreshCw } from "lucide-react";
 import { fetchQueue, type QueueIssue } from "@/lib/officer-api";
 import { OfficerIssueCard } from "./OfficerIssueCard";
+import { DarkFeatureBand } from "@/components/ui/DarkFeatureBand";
 import { cn } from "@/lib/cn";
 
 // Officer queue (frontend-plan §D C8). DarkFeatureBand header with counts, then the
@@ -63,14 +64,7 @@ export function OfficerQueue() {
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6">
-      {/* DarkFeatureBand header */}
-      <section className="rounded-lg bg-brand px-6 py-7 text-on-dark sm:px-8 sm:py-8">
-        <p className="font-mono text-[12px] uppercase tracking-[0.28px] text-on-dark/70">
-          Resolution queue
-        </p>
-        <h1 className="mt-1 font-display text-[26px] font-normal leading-tight tracking-[-0.01em] sm:text-[30px]">
-          {authorityName}
-        </h1>
+      <DarkFeatureBand label="Resolution queue" title={authorityName}>
         <div className="mt-4 flex items-center gap-6">
           <div>
             <p className="font-mono text-[28px] leading-none">{issues?.length ?? "—"}</p>
@@ -81,7 +75,7 @@ export function OfficerQueue() {
             Sorted by how many citizens are affected. Clear the top first.
           </p>
         </div>
-      </section>
+      </DarkFeatureBand>
 
       {/* Filters + refresh */}
       <div className="mt-5 flex items-center justify-between gap-3">
