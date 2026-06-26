@@ -51,7 +51,7 @@ It's a real agent with tools (vision, geocoding, Firestore transactions, FCM, a 
 |---|---|
 | **Gemini 2.5 Flash** (Vertex AI, via Genkit) | The agent's brain — vision classification + severity + OCR + language detection (Perceive), multi-image same-issue comparison (Dedup), formal-complaint drafting (Act), before/after resolution verdict (Verify), escalation/RTI drafting (Escalate), and voice-note transcription. ADC, no API key. |
 | **Google Maps Platform** | Server-side reverse geocoding (address + ward) on every report; the public dashboard's severity-weighted hotspot map; manual map-pin fallback when GPS is denied. |
-| **Firebase** | Auth (anonymous, phone-OTP-upgradeable), Firestore (the whole data model + live `onSnapshot` trace), Storage (citizen photos + before/after proof), Cloud Messaging (status push). |
+| **Firebase** | Auth (anonymous; phone-OTP upgrade built but disabled pending a reCAPTCHA Enterprise key), Firestore (the whole data model + live `onSnapshot` trace), Storage (citizen photos + before/after proof), Cloud Messaging (status push). |
 | **Cloud Run** | Hosts the Next.js app (standalone container, `asia-south1`). Satisfies "deployed on Google Cloud." |
 | **Cloud Scheduler** | Triggers the autonomous SLA-breach sweep (escalation drafting + stale-resolution auto-verify). |
 | **Open311 GeoReport v2** | The issue model is mapped to the civic-interoperability standard and exported at `/api/open311/requests`. |
