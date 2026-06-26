@@ -18,6 +18,7 @@ import { geohashOf } from "@/lib/geo";
 import {
   downscaleImage,
   uploadReportPhoto,
+  uploadReportVoice,
   type MediaResult,
   type UploadProgress,
 } from "@/lib/storage";
@@ -80,12 +81,22 @@ export type DedupResult = {
   reasoning: string;
 };
 
+// report.voiceNote (data-shapes §7). path+downloadUrl set at capture; transcript+language
+// filled by the Perceive step's Gemini transcription (C13).
+export type VoiceNoteRef = {
+  path: string;
+  downloadUrl: string;
+  transcript?: string;
+  language?: string;
+};
+
 export type ReportDoc = {
   id: string;
   reporterUid: string;
   channel: "app";
   status: ReportStatus;
   media: MediaResult;
+  voiceNote?: VoiceNoteRef;
   rawText?: string;
   location: GeoPoint;
   geohash: string;
@@ -110,6 +121,7 @@ export type CreateReportInput = {
   lng: number;
   accuracyM?: number;
   rawText?: string;
+  voiceBlob?: Blob | null;
   onProgress?: UploadProgress;
 };
 
@@ -117,11 +129,18 @@ export type CreateReportInput = {
 // C2 gate the rules don't check (id === doc id, GeoPoint, 10-char geohash, 5 pending
 // steps). Returns the reportId. Kicks the pipeline fire-and-forget.
 export async function createReport(input: CreateReportInput): Promise<string> {
-  const { uid, file, lat, lng, accuracyM, rawText, onProgress } = input;
+  const { uid, file, lat, lng, accuracyM, rawText, voiceBlob, onProgress } = input;
 
   const reportId = doc(collection(db, "reports")).id;
   const blob = await downscaleImage(file);
   const media = await uploadReportPhoto(uid, reportId, blob, onProgress);
+
+  // Optional voice note (C13): uploaded after the photo; transcript filled by the intake.
+  let voiceNote: VoiceNoteRef | undefined;
+  if (voiceBlob) {
+    const v = await uploadReportVoice(uid, reportId, voiceBlob);
+    voiceNote = { path: v.path, downloadUrl: v.downloadUrl };
+  }
 
   const geohash = geohashOf(lat, lng);
   if (geohash.length !== 10) {
@@ -143,6 +162,7 @@ export async function createReport(input: CreateReportInput): Promise<string> {
   };
   if (typeof accuracyM === "number") data.accuracyM = Math.round(accuracyM);
   if (rawText && rawText.trim()) data.rawText = rawText.trim();
+  if (voiceNote) data.voiceNote = voiceNote;
 
   await setDoc(doc(db, "reports", reportId), data);
 

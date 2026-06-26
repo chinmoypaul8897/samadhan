@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth-context";
 import { createReport } from "@/lib/reports";
 import { Button } from "@/components/ui/Button";
 import { MapPinPicker } from "./MapPinPicker";
+import { VoiceRecorder } from "./VoiceRecorder";
 import { cn } from "@/lib/cn";
 
 type Loc = { lat: number; lng: number; accuracyM: number; manual?: boolean };
@@ -35,6 +36,7 @@ export function CaptureFlow() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
   const [loc, setLoc] = useState<LocState>({ tag: "idle" });
   const [pinOpen, setPinOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -89,6 +91,7 @@ export function CaptureFlow() {
         lng: loc.loc.lng,
         accuracyM: loc.loc.accuracyM,
         rawText: note,
+        voiceBlob,
         onProgress: setProgress,
       });
       router.push(`/report/${id}`);
@@ -172,6 +175,8 @@ export function CaptureFlow() {
               className="mt-1.5 w-full rounded-xs border border-hairline bg-canvas px-3 py-2.5 text-[15px] text-ink outline-none placeholder:text-muted focus:border-focus"
             />
           </label>
+
+          <VoiceRecorder onChange={setVoiceBlob} disabled={submitting} />
 
           {submitError ? (
             <p className="flex items-start gap-2 rounded-sm bg-danger/5 px-3 py-2 text-[13px] text-danger">

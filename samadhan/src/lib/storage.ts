@@ -83,6 +83,12 @@ export function uploadReportPhoto(
   return uploadImage(`reports/${uid}/${reportId}/original.jpg`, blob, onProgress);
 }
 
+/** Citizen voice note → reports/{uid}/{reportId}/voice.webm (data-shapes §7; storage.rules
+ *  already allows audio/* under reports/{uid}/**). contentType comes from the blob. */
+export function uploadReportVoice(uid: string, reportId: string, blob: Blob): Promise<MediaResult> {
+  return uploadImage(`reports/${uid}/${reportId}/voice.webm`, blob);
+}
+
 /** Officer proof-of-fix → issues/{issueId}/after/{uid}.jpg (C8; staff-write Storage rule). */
 export function uploadAfterPhoto(
   issueId: string,
