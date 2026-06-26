@@ -25,8 +25,25 @@ export type ActInput = {
   format: string;
 };
 
+// ISO 639-1 → the language to draft the complaint in. Covers the major Indian languages a
+// Bengaluru citizen might use (Kannada is the local language); anything unrecognised or absent
+// falls back to English. The complaint is filed in whatever language the citizen used.
+const LANG_NAMES: Record<string, string> = {
+  en: "English",
+  hi: "Hindi (हिन्दी)",
+  kn: "Kannada (ಕನ್ನಡ)",
+  ta: "Tamil (தமிழ்)",
+  te: "Telugu (తెలుగు)",
+  ml: "Malayalam (മലയാളം)",
+  mr: "Marathi (मराठी)",
+  bn: "Bengali (বাংলা)",
+  gu: "Gujarati (ગુજરાતી)",
+  pa: "Punjabi (ਪੰਜਾਬੀ)",
+  ur: "Urdu (اردو)",
+};
+
 function actPrompt(i: ActInput): string {
-  const langName = i.languageDetected === "hi" ? "Hindi (हिन्दी)" : "English";
+  const langName = LANG_NAMES[i.languageDetected] ?? "English";
   const location = [i.addressString, i.ward].filter(Boolean).join(", ");
   return [
     `You are a civic-affairs assistant drafting a FORMAL complaint on behalf of a citizen of Bengaluru, India.`,

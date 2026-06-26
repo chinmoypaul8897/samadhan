@@ -7,15 +7,17 @@ import { getBucket } from "@/lib/firebase-admin";
 // Voice transcription sub-step (backend-plan C13.1, data-shapes §7). The citizen's voice note
 // is transcribed by Gemini (multimodal audio on the existing Vertex path — no Cloud Speech-to-
 // Text API, no encoding pitfalls) verbatim + language-detected. The transcript is fed into
-// Perceive as rawText (→ classification + languageDetected → Act drafts the complaint in Hindi).
-// Best-effort: voice is optional, so any failure returns null and the photo-only path proceeds.
+// Perceive as rawText (→ classification + languageDetected → Act drafts the complaint in that
+// same language). Best-effort: voice is optional, so any failure returns null and the photo-only
+// path proceeds.
 
 const TRANSCRIBE_PROMPT = [
   "You are the transcription sub-step of a civic-issue resolution agent in Bengaluru, India.",
-  "Transcribe the citizen's voice note VERBATIM. It may be English, Hindi, or Hinglish.",
+  "Transcribe the citizen's voice note VERBATIM. It may be in any Indian language — English,",
+  "Kannada (the local language), Hindi, Tamil, Telugu, Malayalam, etc. — or a code-mixed blend.",
   "Return:",
-  "- transcript: the spoken words as text, in the original language/script (Devanagari for Hindi).",
-  "- language: ISO 639-1 of the dominant spoken language ('en' or 'hi'; default 'en').",
+  "- transcript: the spoken words as text, in the original language and native script.",
+  "- language: ISO 639-1 of the dominant spoken language (e.g. en, kn, hi, ta, te, ml; default 'en').",
   "If there is no intelligible speech, return an empty transcript and 'en'.",
 ].join("\n");
 
