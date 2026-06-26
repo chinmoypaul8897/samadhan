@@ -67,7 +67,7 @@ Bengaluru is not short of *reporting* tools. Janaagraha's **I Change My City** h
 
 - **Gemini 2.5 Flash** (on **Vertex AI**, via Genkit) — the agent's reasoning + vision: classification, severity, OCR and language detection (Perceive); multi-image same-issue comparison (Dedup); formal-complaint drafting (Act); before/after resolution verdict (Verify); escalation and RTI drafting (Escalate); and voice-note transcription. Runs on application-default credentials, no API key, on the Gemini Flash free tier.
 - **Google Maps Platform** — server-side Geocoding (reverse-geocode every report into address + ward) and Maps JavaScript (the public dashboard's severity-weighted hotspot map; manual map-pin fallback).
-- **Firebase** — Auth (anonymous; a phone-OTP upgrade is built but currently disabled, pending a reCAPTCHA Enterprise key), Firestore (the full data model with live `onSnapshot` for the agent trace and timelines), Storage (citizen photos + before/after proof), Cloud Messaging (status push).
+- **Firebase** — Auth (anonymous, **upgradeable to phone-OTP** — a citizen links their number to keep their reports across devices; reCAPTCHA-protected), Firestore (the full data model with live `onSnapshot` for the agent trace and timelines), Storage (citizen photos + before/after proof), Cloud Messaging (status push).
 - **Cloud Run** — hosts the app in `asia-south1`; the "deployed on Google Cloud" requirement.
 - **Cloud Scheduler** — triggers the autonomous SLA-breach sweep (escalation drafting + stale-resolution auto-verify).
 - **Cloud Build + Artifact Registry + Secret Manager** — the build/deploy/secrets pipeline.

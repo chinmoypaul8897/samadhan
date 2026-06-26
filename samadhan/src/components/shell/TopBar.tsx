@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { User as UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { PhoneUpgradeSheet } from "@/components/auth/PhoneUpgradeSheet";
 
-// Citizen top bar: wordmark · profile. (The complaint language is auto-detected from the
-// citizen's voice/text, so there's no manual language control here.)
+// Citizen top bar: wordmark · profile + the phone-OTP "save your reports" upgrade. (The
+// complaint language is auto-detected from the citizen's voice/text, so there's no manual
+// language control here.)
 export function TopBar() {
   const { profile, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const name = profile?.displayName ?? "Anonymous Citizen";
   const isAnon = profile?.isAnonymous !== false; // true while loading / anonymous
   const phone = profile?.phone;
@@ -50,26 +53,24 @@ export function TopBar() {
                       : `Signed in${phone ? ` · ${phone}` : ""}`}
                 </p>
                 {isAnon ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled
-                      className="mt-3 w-full cursor-not-allowed rounded-sm border border-hairline px-3 py-2 text-left text-[13px] text-ink opacity-70"
-                    >
-                      Save your reports
-                    </button>
-                    {/* C13: phone-OTP upgrade is built (PhoneUpgradeSheet + auth-context
-                        startPhoneUpgrade/confirmPhoneOtp) but its entry is deferred — phone auth
-                        needs a provisioned reCAPTCHA Enterprise web key (Identity Platform
-                        managed config); re-enable by opening the sheet here once that's set up. */}
-                    <p className="mt-1 text-[11px] text-muted">Phone sign-in arrives soon.</p>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setUpgradeOpen(true);
+                    }}
+                    className="mt-3 w-full rounded-sm border border-hairline px-3 py-2 text-left text-[13px] text-ink transition hover:bg-stone"
+                  >
+                    Save your reports
+                  </button>
                 ) : null}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      <PhoneUpgradeSheet open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </header>
   );
 }
