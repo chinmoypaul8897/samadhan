@@ -219,9 +219,19 @@ export const intakeFlow = ai.defineFlow(
       }
 
       const t0 = Date.now();
-      analysis = await ai.run("perceive", () =>
-        perceive({ mediaPath: report.media.path, rawText: effectiveRawText }),
-      );
+      try {
+        analysis = await ai.run("perceive", () =>
+          perceive({ mediaPath: report.media.path, rawText: effectiveRawText }),
+        );
+      } catch (err) {
+        // A non-retryable Gemini error (safety block / malformed media) would otherwise reject
+        // the whole flow and leave the report frozen at "processing" with perceive "running".
+        // Mirror the null-output branch → recoverable needs_review, never stuck.
+        console.error("[intake] perceive threw", reportId, err);
+        pipeline[pi] = { ...pipeline[pi], status: "error", summary: "Couldn’t analyse the photo", latencyMs: Date.now() - t0, finishedAt: Timestamp.now(), error: "perceive_threw" };
+        await ref.update({ pipeline, status: "needs_review", updatedAt: FieldValue.serverTimestamp() });
+        return { status: "needs_review" };
+      }
       const latencyMs = Date.now() - t0;
       const finishedAt = Timestamp.now();
 
