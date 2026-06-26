@@ -1,5 +1,6 @@
 import { transition, type IssueStatus } from "@/lib/status";
-import { requireOfficer } from "@/lib/claims";
+import { requireOfficer, assertJurisdiction } from "@/lib/claims";
+import { getDb } from "@/lib/firebase-admin";
 import { errorResponse } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -34,6 +35,12 @@ export async function POST(req: Request) {
     const officer = await requireOfficer(req);
     if (!issueId || !to) throw new Error("BAD_REQUEST");
     if (!STATUSES.includes(to as IssueStatus)) throw new Error("BAD_REQUEST");
+
+    // Jurisdiction: an officer may only transition issues routed to their own authority
+    // (admin passes). Mirrors the officer-portal action route — closes a cross-authority gap.
+    const issueSnap = await getDb().collection("issues").doc(issueId).get();
+    if (!issueSnap.exists) throw new Error("NOT_FOUND");
+    assertJurisdiction(officer, issueSnap.data() as { routing?: { authorityId?: string | null } | null });
 
     const result = await transition(issueId, {
       to: to as IssueStatus,
