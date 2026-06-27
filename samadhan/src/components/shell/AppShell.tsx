@@ -23,7 +23,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       {!fullFocus && <TopBar />}
-      <div className="flex flex-1 flex-col">{children}</div>
+      {/* pb clears the sticky bottom nav + its raised FAB so page content never sits under it. */}
+      <div className={`flex flex-1 flex-col${!fullFocus ? " pb-24" : ""}`}>{children}</div>
       {!fullFocus && <InstallPrompt />}
       {!fullFocus && <BottomNav />}
     </>

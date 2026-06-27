@@ -2,17 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ClipboardList, Plus, type LucideIcon } from "lucide-react";
+import { Home, BarChart3, ClipboardList, Plus, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-// Three-zone bottom nav: Home · Report FAB (the one shadowed element) · Activity.
+// Bottom nav: Home · Impact (public dashboard) · Report FAB (the shadowed element) · Activity.
 export function BottomNav() {
   const pathname = usePathname();
 
   return (
     <nav className="sticky bottom-0 z-30 border-t border-hairline bg-canvas/95 backdrop-blur">
-      <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 items-center px-6">
+      <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-4 items-center px-4">
         <NavItem href="/" label="Home" icon={Home} active={pathname === "/"} />
+        <NavItem
+          href="/dashboard"
+          label="Impact"
+          icon={BarChart3}
+          active={pathname.startsWith("/dashboard")}
+        />
 
         <div className="flex justify-center">
           <Link
