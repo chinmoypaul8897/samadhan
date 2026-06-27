@@ -130,23 +130,31 @@ async function runRouteAct(
     await ref.update({ pipeline: pl, updatedAt: FieldValue.serverTimestamp() });
 
     const t = Date.now();
-    const filing = await ai.run("act", () =>
-      act({
-        serviceName: a.serviceName,
-        severity: a.severity,
-        hazard: a.hazard,
-        title: issue.title,
-        description: issue.description,
-        addressString: issue.addressString,
-        ward: issue.ward ?? null,
-        trackingId: issue.trackingId,
-        languageDetected: a.languageDetected,
-        authorityName: issue.agencyResponsible || auth?.name || shortName,
-        authorityShortName: shortName,
-        department: issue.routing!.department,
-        format: "municipal_portal",
-      }),
-    );
+    // A non-retryable Gemini throw (safety block / malformed) would otherwise reject the whole
+    // flow and freeze the act step at "running" with filing stuck on "draft" → the citizen
+    // FilingCard spins "Drafting…" forever. Catch → null and fall into the failed branch.
+    const filing = await ai
+      .run("act", () =>
+        act({
+          serviceName: a.serviceName,
+          severity: a.severity,
+          hazard: a.hazard,
+          title: issue.title,
+          description: issue.description,
+          addressString: issue.addressString,
+          ward: issue.ward ?? null,
+          trackingId: issue.trackingId,
+          languageDetected: a.languageDetected,
+          authorityName: issue.agencyResponsible || auth?.name || shortName,
+          authorityShortName: shortName,
+          department: issue.routing!.department,
+          format: "municipal_portal",
+        }),
+      )
+      .catch((err) => {
+        console.error("[intake] act threw", issueId, err);
+        return null;
+      });
     const latencyMs = Date.now() - t;
 
     if (filing) {
@@ -158,12 +166,15 @@ async function runRouteAct(
         finishedAt: Timestamp.now(),
       });
     } else {
+      // Mark filing 'failed' so the citizen card shows an honest error state, not a forever
+      // spinner. The issue itself is still seeded + tracked; an officer can still act on it.
+      await issueRef.update({ "filing.status": "failed", updatedAt: FieldValue.serverTimestamp() });
       pl = setStep(pl, "act", {
         status: "error",
         summary: "Couldn’t draft the complaint",
         latencyMs,
         finishedAt: Timestamp.now(),
-        error: "null_output",
+        error: "act_failed",
       });
     }
     await ref.update({ pipeline: pl, updatedAt: FieldValue.serverTimestamp() });

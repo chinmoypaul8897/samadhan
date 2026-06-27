@@ -60,6 +60,26 @@ export function FilingCard({
     );
   }
 
+  // ── Failed: the Act draft step errored (Gemini failure) — honest error, never a forever spinner ──
+  if (status === "failed") {
+    return (
+      <section>
+        <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.28px] text-muted">
+          Formal complaint
+        </h2>
+        <div className="rounded-md border border-danger/20 bg-danger/5 px-4 py-3">
+          <p className="text-[14px] font-medium text-ink">
+            Couldn’t draft the complaint automatically
+          </p>
+          <p className="mt-1 text-[13px] text-ink/70">
+            The agent hit an error preparing the formal complaint to {shortName}. Your issue is
+            still logged and tracked against the SLA — an officer can pick it up from the queue.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   // ── Drafting / draft / error: not yet ready to file ──
   if (status !== "prepared" || !filing?.complaintText) {
     return (
