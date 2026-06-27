@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 // Reusable one-tap consent sheet (frontend-plan §C `ConsentSheet` → contact-form-card).
@@ -36,9 +37,12 @@ export function ConsentSheet({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  // Render through a portal to <body> so the fixed overlay escapes any transformed ancestor
+  // (e.g. the issue page's `animate-fade-up`), which would otherwise trap `position:fixed` inside
+  // the page content — clipping the header and leaving the top bar/nav un-dimmed.
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
       <button
         type="button"
@@ -46,7 +50,7 @@ export function ConsentSheet({
         onClick={onClose}
         className="animate-scrim-in absolute inset-0 bg-primary/40"
       />
-      <div className="animate-sheet-up relative flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-t-lg border border-hairline bg-canvas shadow-xl sm:rounded-lg">
+      <div className="animate-sheet-up relative flex max-h-[88dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-lg border border-hairline bg-canvas shadow-xl sm:rounded-lg">
         <header className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4">
           <div className="min-w-0">
             <h2 className="font-display text-[18px] font-normal leading-tight text-ink">{title}</h2>
@@ -66,6 +70,7 @@ export function ConsentSheet({
 
         <div className="border-t border-hairline bg-canvas px-5 py-4">{footer}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
