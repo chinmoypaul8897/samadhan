@@ -61,7 +61,13 @@ const ACTIVE = new Set([
 export async function GET() {
   try {
     const db = getDb();
-    const snap = await db.collection("issues").limit(SCAN_LIMIT).get();
+    // Public transparency layer — scope to public issues only (matches /api/issues/geo +
+    // /api/open311), so a private issue's title/media/tracking-ID can never surface here.
+    const snap = await db
+      .collection("issues")
+      .where("isPublic", "==", true)
+      .limit(SCAN_LIMIT)
+      .get();
     const now = Date.now();
     const bucketName = getBucket().name;
 

@@ -53,7 +53,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     assertJurisdiction(officer, issue);
 
     // Per-action requirements (proof-of-fix / reason).
-    if (act === "resolve" && !afterMediaPath) throw new Error("MISSING_PHOTO");
+    if (act === "resolve") {
+      if (!afterMediaPath) throw new Error("MISSING_PHOTO");
+      // Bind the proof to THIS issue's after-folder — a client can't point the before/after
+      // verdict at another issue's photo (defence-in-depth atop the staff-only Storage rule).
+      if (!afterMediaPath.startsWith(`issues/${id}/after/`)) throw new Error("BAD_REQUEST");
+    }
     if (act === "cannot_fix" && !(note && note.trim())) throw new Error("MISSING_NOTE");
 
     const patch: Record<string, unknown> = {};

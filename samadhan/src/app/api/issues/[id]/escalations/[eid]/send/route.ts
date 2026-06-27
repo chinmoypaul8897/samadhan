@@ -34,30 +34,34 @@ export async function POST(
   try {
     const { uid } = await requireCitizen(req);
 
-    const issueSnap = await issueRef.get();
-    if (!issueSnap.exists) throw new Error("NOT_FOUND");
-    if (uid !== (issueSnap.data()?.reporterUid as string | undefined)) throw new Error("FORBIDDEN");
+    // One transaction (mirrors the other one-tap endpoints) so two concurrent taps can't each
+    // append a duplicate 'escalation' timeline row — the re-read of escRef inside guards it.
+    const already = await db.runTransaction(async (tx) => {
+      const issueSnap = await tx.get(issueRef);
+      if (!issueSnap.exists) throw new Error("NOT_FOUND");
+      if (uid !== (issueSnap.data()?.reporterUid as string | undefined)) throw new Error("FORBIDDEN");
 
-    const escSnap = await escRef.get();
-    if (!escSnap.exists) throw new Error("NOT_FOUND");
-    const esc = escSnap.data() as { status?: string; type?: string };
+      const escSnap = await tx.get(escRef);
+      if (!escSnap.exists) throw new Error("NOT_FOUND");
+      const esc = escSnap.data() as { status?: string; type?: string };
+      if (esc.status === "sent") return true; // already sent → idempotent no-op
 
-    if (esc.status === "sent") return Response.json({ ok: true, already: true });
-
-    await escRef.update({
-      status: "sent",
-      sentAt: FieldValue.serverTimestamp(),
-      approvedByUid: uid,
+      tx.update(escRef, {
+        status: "sent",
+        sentAt: FieldValue.serverTimestamp(),
+        approvedByUid: uid,
+      });
+      tx.set(issueRef.collection("activity").doc(), {
+        type: "escalation",
+        message: `Escalation sent: ${TYPE_LABEL[esc.type ?? ""] ?? "escalation"}`,
+        actorUid: uid,
+        actorRole: "citizen",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      return false;
     });
-    await issueRef.collection("activity").add({
-      type: "escalation",
-      message: `Escalation sent: ${TYPE_LABEL[esc.type ?? ""] ?? "escalation"}`,
-      actorUid: uid,
-      actorRole: "citizen",
-      createdAt: FieldValue.serverTimestamp(),
-    });
 
-    return Response.json({ ok: true, already: false });
+    return Response.json({ ok: true, already });
   } catch (err) {
     return errorResponse(err, "escalation/send");
   }
