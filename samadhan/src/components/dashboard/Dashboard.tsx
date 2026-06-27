@@ -29,11 +29,14 @@ type Stats = {
   recentlyResolved: ResolvedItem[];
 };
 type GeoP = {
+  id: string;
   lat: number;
   lng: number;
   severity: string;
   group: string;
   status: string;
+  title: string;
+  trackingId: string;
   ward: string | null;
   createdAtMs: number | null;
 };
@@ -205,6 +208,45 @@ export function Dashboard() {
                     </span>
                   </li>
                 ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {/* Latest reports — tappable browse into any public issue (open or resolved). Gives a
+              path to add your voice (me-too) on an issue you didn't report. */}
+          {points && points.length > 0 ? (
+            <section className="mt-6">
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">
+                Latest reports
+              </h2>
+              <p className="mt-1 text-[13px] text-muted">
+                Tap any issue to track it — or add your voice.
+              </p>
+              <ul className="mt-3 divide-y divide-hairline overflow-hidden rounded-md border border-hairline">
+                {[...points]
+                  .sort((a, b) => (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0))
+                  .slice(0, 6)
+                  .map((p) => (
+                    <li key={p.id}>
+                      <Link
+                        href={`/issue/${p.id}`}
+                        className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-stone"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-[14px] text-ink">
+                            {p.title || "Civic issue"}
+                          </span>
+                          <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.28px] text-muted">
+                            {p.trackingId}
+                            {p.ward ? ` · ${p.ward}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 rounded-full border border-hairline bg-canvas px-2 py-0.5 text-[11px] font-medium capitalize text-ink/70">
+                          {p.status.replace(/_/g, " ")}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
               </ul>
             </section>
           ) : null}

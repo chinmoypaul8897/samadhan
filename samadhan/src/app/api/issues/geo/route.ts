@@ -31,6 +31,7 @@ export async function GET() {
         const d = doc.data() as IssueData;
         if (!d.location) return null;
         return {
+          id: doc.id,
           lat: d.location.latitude,
           lng: d.location.longitude,
           severity: d.severity ?? "medium",
