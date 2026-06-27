@@ -96,6 +96,7 @@ export function IssueDetail({ issueId }: { issueId: string }) {
             deadline={issue.sla.deadline}
             slaHours={issue.sla.slaHours}
             resolvedAt={issue.resolvedAt ?? null}
+            closed={issue.status === "cannot_fix"}
           />
 
           {/* Escalation (C10) — renders only when the agent has drafted escalations on breach. */}

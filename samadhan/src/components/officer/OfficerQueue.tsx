@@ -40,7 +40,7 @@ export function OfficerQueue() {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
-  const [now] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
 
   const load = async () => {
     setRefreshing(true);
@@ -48,6 +48,7 @@ export function OfficerQueue() {
       const res = await fetchQueue();
       setIssues(res.issues);
       setAuthorityId(res.authority.id);
+      setNow(Date.now()); // re-base the per-row SLA chips on every refresh
       setError(false);
     } catch {
       setError(true);
@@ -58,6 +59,13 @@ export function OfficerQueue() {
 
   useEffect(() => {
     void load();
+  }, []);
+
+  // Keep the breach chips honest during a long triage session (the citizen SlaClock ticks live;
+  // this list view re-bases its reference time periodically rather than freezing at mount).
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
   }, []);
 
   const active = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];

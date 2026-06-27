@@ -24,17 +24,35 @@ export function SlaClock({
   deadline,
   slaHours,
   resolvedAt,
+  closed = false,
 }: {
   deadline: Timestamp;
   slaHours: number;
   resolvedAt?: Timestamp | null;
+  closed?: boolean;
 }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (resolvedAt) return;
+    if (resolvedAt || closed) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [resolvedAt]);
+  }, [resolvedAt, closed]);
+
+  // Terminal "cannot fix" issues never get a resolution time, so the live clock would otherwise
+  // read a contradictory red "SLA breached" beside the muted "Can't fix" chip. Show a neutral
+  // closed state instead — the issue was referred out, not missed.
+  if (closed) {
+    return (
+      <div className="rounded-md border border-hairline bg-canvas p-4">
+        <p className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">SLA clock</p>
+        <div className="mt-1 flex items-baseline gap-2 text-muted">
+          <span className="font-mono text-[28px] tabular-nums tracking-tight">Closed</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.28px]">unable to resolve</span>
+        </div>
+        <p className="mt-1 text-[12px] text-muted">Referred outside this authority’s remit.</p>
+      </div>
+    );
+  }
 
   const deadlineMs = deadline.toMillis();
   const resolvedMs = resolvedAt ? resolvedAt.toMillis() : null;
