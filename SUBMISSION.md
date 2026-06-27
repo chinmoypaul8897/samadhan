@@ -60,7 +60,7 @@ Bengaluru is not short of *reporting* tools. Janaagraha's **I Change My City** h
 - **Next.js** (App Router, TypeScript, Turbopack, standalone) + **Tailwind CSS** — an installable PWA.
 - **Genkit** + `@genkit-ai/google-genai` — orchestrates the multi-step agent flow and traces every step.
 - **Firebase** — Authentication, Cloud Firestore, Cloud Storage, Cloud Messaging.
-- **TypeScript / Node 22**, deployed as a container on **Cloud Run** via **Cloud Build**.
+- **TypeScript / Node 24**, deployed as a container on **Cloud Run** via **Cloud Build**.
 - Data modelled on the **Open311 GeoReport v2** civic standard.
 
 ## 5. Google technologies used (load-bearing)
