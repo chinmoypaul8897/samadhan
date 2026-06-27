@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, BarChart3, ClipboardList, Plus, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-// Bottom nav: Home · Impact (public dashboard) · Report FAB (the shadowed element) · Activity.
+// Bottom nav: Home · Impact (public dashboard) · Report (prominent + labelled) · Activity.
 export function BottomNav() {
   const pathname = usePathname();
 
@@ -20,15 +20,17 @@ export function BottomNav() {
           active={pathname.startsWith("/dashboard")}
         />
 
-        <div className="flex justify-center">
-          <Link
-            href="/report"
-            aria-label="Report an issue"
-            className="grid size-14 -translate-y-3 place-items-center rounded-full bg-brand text-on-dark shadow-lg shadow-brand/30 transition active:scale-95"
-          >
-            <Plus className="size-7" strokeWidth={2} />
-          </Link>
-        </div>
+        <Link
+          href="/report"
+          aria-label="Report an issue"
+          aria-current={pathname.startsWith("/report") ? "page" : undefined}
+          className="flex flex-col items-center gap-0.5"
+        >
+          <span className="grid size-10 place-items-center rounded-full bg-brand text-on-dark shadow-md shadow-brand/25 transition active:scale-95">
+            <Plus className="size-5" strokeWidth={2.5} />
+          </span>
+          <span className="text-[11px] font-medium text-brand">Report</span>
+        </Link>
 
         <NavItem
           href="/me"
