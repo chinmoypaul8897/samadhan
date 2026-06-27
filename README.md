@@ -124,7 +124,7 @@ sequenceDiagram
 |---|---|
 | **Gemini 2.5 Flash** *(Vertex AI, via Genkit)* | The agent's brain end-to-end: vision **classification + severity + OCR + language detection** (Perceive), **multi-image same-issue comparison** (Dedup), **formal-complaint drafting** in the citizen's language (Act), **before/after resolution verdict** (Verify), **escalation + RTI drafting** (Escalate), and **voice-note transcription**. Runs on ADC — no API key. |
 | **Google Maps Platform** | Server-side **reverse geocoding** (address + ward) on every report; the dashboard's **severity-weighted hotspot map**; manual **map-pin fallback** when GPS is denied. |
-| **Firebase** | **Auth** (anonymous, phone-OTP-upgradeable), **Firestore** (the whole data model + live `onSnapshot` agent trace), **Storage** (citizen photos + before/after proof), **Cloud Messaging** (status push, verified on a real Android device). |
+| **Firebase** | **Auth** (anonymous — the whole product runs without forcing sign-up), **Firestore** (the whole data model + live `onSnapshot` agent trace), **Storage** (citizen photos + before/after proof), **Cloud Messaging** (status push, verified on a real Android device). |
 | **Cloud Run** | Hosts the standalone Next.js container in `asia-south1` — the "deployed on Google Cloud" requirement. |
 | **Cloud Scheduler** | Fires the **autonomous SLA-breach sweep** every 10 min — escalation drafting + stale-resolution auto-verify, with zero human in the loop. |
 | **Cloud Build · Artifact Registry · Secret Manager** | The build / deploy / secrets pipeline. |
@@ -327,7 +327,7 @@ Public config lives in `.env.local` (`NEXT_PUBLIC_*`, gitignored); server secret
 
 ## Roadmap
 
-Deliberately out of scope for this build, in priority order: **watch-your-ward** area subscriptions · two-way officer ↔ citizen messages · a pre-submission nearby-issue nudge · full UI internationalisation (the *complaint* is already filed in the citizen's language) · WhatsApp + video intake · real government-portal integration · predictive hotspot analytics.
+Deliberately out of scope for this build, in priority order: **phone-OTP sign-in** (save reports across devices; the product runs on anonymous auth today) · **watch-your-ward** area subscriptions · two-way officer ↔ citizen messages · a pre-submission nearby-issue nudge · full UI internationalisation (the *complaint* is already filed in the citizen's language) · WhatsApp + video intake · real government-portal integration · predictive hotspot analytics.
 
 ---
 

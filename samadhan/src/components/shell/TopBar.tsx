@@ -4,15 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { User as UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { PhoneUpgradeSheet } from "@/components/auth/PhoneUpgradeSheet";
 
-// Citizen top bar: wordmark · profile + the phone-OTP "save your reports" upgrade. (The
-// complaint language is auto-detected from the citizen's voice/text, so there's no manual
-// language control here.)
+// Citizen top bar: wordmark · profile. The whole product runs on anonymous auth; phone-OTP
+// sign-in (save reports across devices) is on the roadmap, so the profile menu carries no
+// upgrade action — no dead clicks. (The complaint language is auto-detected from the citizen's
+// voice/text, so there's no manual language control here either.)
 export function TopBar() {
   const { profile, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const name = profile?.displayName ?? "Anonymous Citizen";
   const isAnon = profile?.isAnonymous !== false; // true while loading / anonymous
   const phone = profile?.phone;
@@ -52,25 +51,11 @@ export function TopBar() {
                       ? "Signed in anonymously"
                       : `Signed in${phone ? ` · ${phone}` : ""}`}
                 </p>
-                {isAnon ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setUpgradeOpen(true);
-                    }}
-                    className="mt-3 w-full rounded-sm border border-hairline px-3 py-2 text-left text-[13px] text-ink transition hover:bg-stone"
-                  >
-                    Save your reports
-                  </button>
-                ) : null}
               </div>
             )}
           </div>
         </div>
       </div>
-
-      <PhoneUpgradeSheet open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </header>
   );
 }
