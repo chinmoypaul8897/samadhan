@@ -12,24 +12,49 @@ export function FcmForeground() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "granted") return;
 
     let active = true;
     let unsub = () => {};
-    listenForeground((payload) => {
-      const d = payload.data ?? {};
-      toast({
-        title: d.title || payload.notification?.title || "Samadhan",
-        body: d.body || payload.notification?.body,
+
+    const attach = () => {
+      if (Notification.permission !== "granted") return;
+      listenForeground((payload) => {
+        const d = payload.data ?? {};
+        toast({
+          title: d.title || payload.notification?.title || "Samadhan",
+          body: d.body || payload.notification?.body,
+        });
+      }).then((u) => {
+        if (active) unsub = u;
+        else u();
       });
-    }).then((u) => {
-      if (active) unsub = u;
-      else u();
-    });
+    };
+
+    attach();
+
+    // Re-attach if the citizen opts in mid-session (permission → granted) without a reload —
+    // the demo-critical background OS push is handled by the SW independently of this listener.
+    let perm: PermissionStatus | null = null;
+    const onChange = () => {
+      if (Notification.permission === "granted") {
+        unsub();
+        unsub = () => {};
+        attach();
+      }
+    };
+    navigator.permissions
+      ?.query({ name: "notifications" as PermissionName })
+      .then((s) => {
+        if (!active) return;
+        perm = s;
+        s.addEventListener("change", onChange);
+      })
+      .catch(() => {});
 
     return () => {
       active = false;
       unsub();
+      perm?.removeEventListener("change", onChange);
     };
   }, [toast]);
 

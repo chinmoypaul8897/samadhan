@@ -198,9 +198,11 @@ export function CaptureFlow() {
                 : "Submitting…"
               : "Report this"}
           </Button>
-          {loc.tag !== "ok" && !submitting ? (
+          {!submitting && (loc.tag !== "ok" || !user) ? (
             <p className="text-center text-[12px] text-muted">
-              A location is needed before you can report.
+              {loc.tag !== "ok"
+                ? "A location is needed before you can report."
+                : "Getting you ready…"}
             </p>
           ) : null}
         </div>

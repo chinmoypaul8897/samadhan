@@ -38,8 +38,9 @@ function useCountUp(target: number, durationMs = 900): number {
 }
 
 export function MergeCelebration({ issueId }: { issueId: string }) {
-  const { issue } = useIssue(issueId);
+  const { issue, error } = useIssue(issueId);
   const loaded = issue !== undefined && issue !== null;
+  const failed = error || issue === null; // read error / missing doc → don't spin forever
   // "N citizens ALREADY reported this" = everyone before you → supporterCount − 1.
   const others = loaded ? Math.max((issue.supporterCount ?? 1) - 1, 1) : 0;
   const display = useCountUp(others);
@@ -55,6 +56,8 @@ export function MergeCelebration({ issueId }: { issueId: string }) {
             <span className="tabular-nums">{display}</span>{" "}
             {others === 1 ? "citizen has" : "citizens have"} already reported this
           </>
+        ) : failed ? (
+          "Linked to an existing report"
         ) : (
           "Matching your report…"
         )}
