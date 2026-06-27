@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Camera,
+  Images,
   MapPin,
   LoaderCircle,
   RefreshCw,
@@ -31,7 +32,8 @@ type LocState =
 export function CaptureFlow() {
   const router = useRouter();
   const { user } = useAuth();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -118,27 +120,32 @@ export function CaptureFlow() {
         Snap the problem — the agent classifies, locates and files it for you.
       </p>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        onChange={onPick}
-      />
+      {/* Camera input forces the rear camera; the gallery input omits `capture` so the OS opens
+          the photo library — two distinct, working paths (the single "capture" input blocked gallery). */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden onChange={onPick} />
+      <input ref={galleryInputRef} type="file" accept="image/*" hidden onChange={onPick} />
 
       {!file ? (
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="mt-8 flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-hairline bg-stone/40 text-brand transition active:scale-[0.99] hover:bg-stone"
-        >
-          <span className="grid size-16 place-items-center rounded-full bg-brand text-on-dark">
-            <Camera className="size-8" strokeWidth={1.5} />
-          </span>
-          <span className="font-sans text-[15px] text-ink">Take a photo</span>
-          <span className="text-[13px] text-muted">or choose from your gallery</span>
-        </button>
+        <div className="mt-8 space-y-3">
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-hairline bg-stone/40 text-brand transition active:scale-[0.99] hover:bg-stone"
+          >
+            <span className="grid size-16 place-items-center rounded-full bg-brand text-on-dark">
+              <Camera className="size-8" strokeWidth={1.5} />
+            </span>
+            <span className="font-sans text-[15px] text-ink">Take a photo</span>
+            <span className="text-[13px] text-muted">use your camera</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => galleryInputRef.current?.click()}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-hairline px-4 py-3 text-[14px] font-medium text-ink transition hover:bg-stone active:scale-[0.99]"
+          >
+            <Images className="size-4 text-brand" strokeWidth={1.75} /> Choose from gallery
+          </button>
+        </div>
       ) : (
         <div className="mt-6 space-y-5">
           <div className="overflow-hidden rounded-lg border border-hairline bg-stone">
@@ -152,7 +159,7 @@ export function CaptureFlow() {
 
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => cameraInputRef.current?.click()}
             className="inline-flex items-center gap-1.5 text-[13px] text-link transition hover:opacity-80"
           >
             <RefreshCw className="size-4" strokeWidth={1.5} /> Retake
