@@ -216,12 +216,15 @@ export function Dashboard() {
               path to add your voice (me-too) on an issue you didn't report. */}
           {points && points.length > 0 ? (
             <section className="mt-6">
-              <h2 className="font-mono text-[11px] uppercase tracking-[0.28px] text-muted">
-                Latest reports
-              </h2>
-              <p className="mt-1 text-[13px] text-muted">
-                Tap any issue to track it — or add your voice.
-              </p>
+              {/* Cyan focus card — draws the eye to the browse / me-too entry point. */}
+              <div className="rounded-md bg-[#06b6d4] px-4 py-3 text-white shadow-sm">
+                <h2 className="font-mono text-[12px] font-medium uppercase tracking-[0.28px]">
+                  Latest reports
+                </h2>
+                <p className="mt-0.5 text-[13px] text-white/90">
+                  Tap any issue to track it — or add your voice.
+                </p>
+              </div>
               <ul className="mt-3 divide-y divide-hairline overflow-hidden rounded-md border border-hairline">
                 {[...points]
                   .sort((a, b) => (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0))
