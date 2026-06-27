@@ -235,7 +235,7 @@ export function useFixVote(issueId: string, uid?: string | null) {
 }
 
 /** Live escalations (newest first) — the agent's drafted reminders/appeals/RTI (C10). */
-export function useEscalations(issueId: string) {
+export function useEscalations(issueId: string | undefined) {
   const [items, setItems] = useState<Escalation[]>([]);
   useEffect(() => {
     if (!issueId) return; // guard: collection() throws on an undefined path segment

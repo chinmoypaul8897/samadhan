@@ -21,7 +21,11 @@ const META: Record<Escalation["type"], { label: string; icon: typeof Bell }> = {
 };
 
 export function EscalationCard({ issueId, reporterUid }: { issueId: string; reporterUid: string }) {
-  const escalations = useEscalations(issueId);
+  const { user } = useAuth();
+  // Escalations are reporter/officer-read-only (firestore rules). Only subscribe when the viewer
+  // is the reporter — otherwise a non-reporter opening a public issue throws a permissions error.
+  const isReporter = !!user && user.uid === reporterUid;
+  const escalations = useEscalations(isReporter ? issueId : undefined);
   if (escalations.length === 0) return null;
 
   return (
