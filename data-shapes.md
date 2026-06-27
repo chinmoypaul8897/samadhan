@@ -338,7 +338,7 @@ Verification {
   beforeMediaPath: string;
   afterMediaPath?: string;
   aiVerdict?: { resolved: boolean; confidence: number; reasoning: string;
-                gpsMatch: boolean; timestampMatch: boolean };
+                gpsMatch: boolean; timestampMatch: boolean; checkedAt?: Timestamp };
   citizenConfirmed?: boolean;
   confirmedByUid?: string;
   outcome?: 'verified'|'rejected'|'auto';   // 'auto' = grace-window auto-confirm
